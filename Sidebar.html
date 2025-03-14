@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Data Ingest Manager</title>
+  <style>
+    /* Sidebar-optimized styles */
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 8px;
+      font-size: 12px;
+      color: #202124;
+      max-width: 300px;
+    }
+    
+    h2 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .add-button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+      line-height: 24px;
+      text-align: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      margin: 0 3px 5px 0;
+      position: relative;
+      min-width: 60px;
+    }
+    
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    
+    .btn-secondary {
+      background-color: #5f6368;
+    }
+    
+    .btn-success {
+      background-color: #34a853;
+    }
+    
+    .btn-danger {
+      background-color: #ea4335;
+    }
+    
+    .action-bar {
+      display: flex;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    
+    /* Tabs styling */
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .tab {
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .tab.active {
+      font-weight: bold;
+      border-bottom: 2px solid #4285f4;
+    }
+    
+    /* Accordion styling for rules */
+    .accordion-item {
+      margin-bottom: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+    
+    .accordion-header {
+      padding: 6px 8px;
+      cursor: pointer;
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .rule-info {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+    
+    .rule-title {
+      font-weight: bold;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    
+    .rule-meta {
+      display: flex;
+      gap: 4px;
+      font-size: 9px;
+      color: #5f6368;
+      margin-top: 2px;
+      align-items: center;
+    }
+    
+    .status-badge {
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    
+    .success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    
+    .error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    
+    .skipped {
+      background-color: #fef7e0;
+      color: #ea8600;
+    }
+    
+    .new {
+      background-color: #e8f0fe;
+      color: #1a73e8;
+    }
+    
+    .arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    
+    .accordion-content {
+      display: none;
+      padding: 8px;
+      font-size: 11px;
+    }
+    
+    /* Rule tab styles */
+    .mini-tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+    
+    .mini-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 4px;
+      font-size: 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .mini-tab.active {
+      border-bottom: 2px solid #4285f4;
+      font-weight: bold;
+      color: #4285f4;
+    }
+    
+    .mini-tab-content {
+      padding: 5px 0;
+      display: none;
+    }
+    
+    /* Form controls */
+    .form-row {
+      margin-bottom: 6px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="time"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 4px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    
+    .help-text {
+      font-size: 9px;
+      color: #5f6368;
+      margin-top: 2px;
+    }
+    
+    .required {
+      color: #d93025;
+      margin-left: 2px;
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    
+    .checkbox-container input {
+      width: auto;
+      margin-right: 5px;
+    }
+    
+    /* Status indicator */
+    .status-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 5px;
+      border-radius: 4px;
+      background: #f8f9fa;
+    }
+    
+    .status-info-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-info-text {
+      font-size: 10px;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 20px 0;
+      color: #5f6368;
+    }
+    
+    .empty-state p {
+      margin-bottom: 15px;
+    }
+    
+    /* Log styling */
+    .log-entry {
+      font-size: 10px;
+      padding: 4px;
+      margin-bottom: 3px;
+      border-radius: 3px;
+    }
+    
+    .log-neutral {
+      background-color: #f8f9fa;
+    }
+    
+    .log-success {
+      background-color: #e6f4ea;
+    }
+    
+    .log-error {
+      background-color: #fce8e6;
+    }
+    
+    .log-warning {
+      background-color: #fef7e0;
+    }
+    
+    .log-time {
+      font-weight: bold;
+      display: inline-block;
+      width: 70px;
+    }
+    
+    .log-event {
+      font-weight: bold;
+      display: inline-block;
+      width: 70px;
+    }
+    
+    .session-header {
+      background-color: #f1f3f4;
+      padding: 4px 6px;
+      margin-bottom: 5px;
+      border-radius: 3px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .session-content {
+      display: none;
+      margin-bottom: 10px;
+    }
+    
+    /* Spinner for loading */
+    .spinner-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255,255,255,0.7);
+      border-radius: 4px;
+    }
+    
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(66, 133, 244, 0.3);
+      border-radius: 50%;
+      border-top-color: #4285f4;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Schedule Tab */
+    .schedule-section {
+      margin-bottom: 15px;
+    }
+    
+    /* Alert box for messages */
+    .alert {
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .alert-success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    
+    .alert-error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+  </style>
+</head>
+<body>
+  <h2>
+    Data Ingest Manager
+    <button class="add-button" onclick="addNewRule()">+</button>
+  </h2>
+  
+  <!-- Alert box for messages -->
+  <div id="alertBox" class="alert">
+    <span id="alertMessage"></span>
+  </div>
+  
+  <div class="tabs">
+    <div class="tab active" id="rulesTab" onclick="switchTab('rules')">Data Sources</div>
+    <div class="tab" id="logsTab" onclick="switchTab('logs')">Logs</div>
+    <div class="tab" id="scheduleTab" onclick="switchTab('schedule')">Schedule</div>
+  </div>
+  
+  <!-- Data Sources Tab -->
+  <div id="rulesContent">
+    <div id="actionBarContainer" style="display:none;">
+      <div class="action-bar">
+        <button id="runSelectedBtn" class="btn btn-secondary" onclick="runSelected()">Run Selected</button>
+      </div>
+    </div>
+    
+    <div id="rulesContainer">
+      <!-- Rules will be loaded here -->
+      <div id="emptyState" class="empty-state">
+        <p>No data sources configured yet.</p>
+        <p>Click the <b>+</b> button in the top-right corner to add your first data source.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Logs Tab -->
+  <div id="logsContent" style="display:none;">
+    <div class="action-bar" style="justify-content: space-between; align-items: center;">
+      <input type="text" placeholder="Filter logs..." style="width:70%; margin-bottom:8px;" 
+             onkeyup="filterLogs(this.value)">
+      <button id="clearLogsBtn" class="btn btn-sm btn-secondary" onclick="clearLogs()" 
+              title="Clear all logs">Clear Logs</button>
+    </div>
+    <div id="logSessionsContainer">
+      <!-- Log sessions will be populated dynamically -->
+      <div class="empty-state">
+        <p>No logs available.</p>
+        <p>Run a data source to generate logs.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Schedule Tab -->
+  <div id="scheduleContent" style="display:none;">
+    <div class="action-bar">
+      <button id="saveScheduleBtn" class="btn btn-success" onclick="saveSchedule()" style="width: 100%;">Save Schedule</button>
+    </div>
+    
+    <div style="margin-top: 10px;">
+      <div class="form-row">
+        <label>Run Frequency:</label>
+        <select id="scheduleFrequency" onchange="handleFrequencyChange(this.value)">
+          <option value="manual">Manual Only</option>
+          <option value="hourly">Hourly</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      
+      <div id="timeSettings" style="margin-top: 10px; display:none;">
+        <div class="form-row">
+          <label>Run Time:</label>
+          <input type="time" id="scheduleTime" value="08:00">
+        </div>
+        
+        <div class="form-row" id="daySelection" style="display:none;">
+          <label>Day of Week:</label>
+          <select id="scheduleDayOfWeek">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="0">Sunday</option>
+          </select>
+        </div>
+        
+        <div class="form-row" id="dateSelection" style="display:none;">
+          <label>Day of Month:</label>
+          <select id="scheduleDayOfMonth">
+            <option value="1">1st</option>
+            <option value="15">15th</option>
+            <option value="last">Last day</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-row" style="margin-top: 15px;">
+        <label>Notification Email:</label>
+        <input type="email" id="notificationEmail" placeholder="Enter email for notifications">
+      </div>
+      
+      <div class="empty-state" style="margin-top: 20px;">
+        <p><i>This feature is coming soon!</i></p>
+        <p>Scheduling will allow automatic execution of all active data sources.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Global variables
+    let appData = {};
+    let ruleCounter = 0;
+    let currentRules = {};
+    
+    // Initialize the sidebar
+    function initializeSidebar() {
+      // Show loading indicator
+      document.body.innerHTML += '<div id="loading" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;"><div style="padding:20px;background:white;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.1);"><div class="spinner"></div><div style="margin-top:10px;">Loading...</div></div></div>';
+      
+      console.log("Initializing sidebar...");
+      
+      // Initialize the currentRules object
+      currentRules = {};
+      
+      // Get data from server
+      google.script.run
+        .withSuccessHandler(function(data) {
+          // Store the data globally
+          appData = data;
+          
+          console.log("Received sidebar data from server");
+          
+          // Load rules
+          if (data.config && data.config.rules && data.config.rules.length > 0) {
+            console.log(`Found ${data.config.rules.length} rules in configuration`);
+            
+            // Clear the rules container first
+            document.getElementById('rulesContainer').innerHTML = '';
+            
+            // Process each rule
+            data.config.rules.forEach(rule => {
+              console.log(`Processing rule: ${rule.id} - ${rule.description}`);
+              
+              // Debug the source data for email rules
+              if (rule.method === 'email' && rule.source) {
+                console.log(`Email rule source data:`, {
+                  emailSearch: rule.source.emailSearch || 'not set',
+                  attachmentPattern: rule.source.attachmentPattern || 'not set'
+                });
+              }
+              
+              // Create the rule element (this will also store the rule in currentRules)
+              createRuleElement(rule);
+            });
+          } else {
+            console.log("No rules found in configuration");
+          }
+          
+          // Load logs
+          if (data.logs && data.logs.length > 0) {
+            console.log(`Found ${data.logs.length} log sessions`);
+            populateLogSessions(data.logs);
+          } else {
+            console.log("No logs found");
+          }
+          
+          // Update empty state
+          updateEmptyState();
+          
+          // Setup schedule UI based on saved settings
+          if (data.config && data.config.preferences && data.config.preferences.schedule) {
+            console.log("Setting up schedule UI with saved preferences");
+            setupScheduleUI(data.config.preferences.schedule);
+          }
+          
+          // Remove loading indicator
+          document.getElementById('loading').remove();
+        })
+        .withFailureHandler(function(error) {
+          console.error("Error loading sidebar data:", error);
+          
+          // Remove loading indicator if it exists
+          if (document.getElementById('loading')) {
+            document.getElementById('loading').remove();
+          }
+          showAlert("Error loading data: " + error, true);
+        })
+        .getSidebarData();
+    }
+    
+    // Switch between tabs
+    function switchTab(tabName) {
+      // Hide all content
+      document.getElementById('rulesContent').style.display = 'none';
+      document.getElementById('logsContent').style.display = 'none';
+      document.getElementById('scheduleContent').style.display = 'none';
+      
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      
+      // Show selected content and highlight tab
+      document.getElementById(tabName + 'Content').style.display = 'block';
+      document.getElementById(tabName + 'Tab').classList.add('active');
+    }
+    
+    // Toggle accordion panel
+    function toggleAccordion(element) {
+      const content = element.nextElementSibling;
+      const arrow = element.querySelector('.arrow');
+      
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Toggle log session details
+    function toggleSession(header) {
+      const content = header.nextElementSibling;
+      const arrow = header.querySelector('.arrow');
+      
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Add a new rule
+    function addNewRule() {
+      // Create unique ID for the new rule
+      const ruleId = 'rule-' + new Date().getTime();
+      
+      // Create new rule object
+      const rule = {
+        id: ruleId,
+        active: true,
+        description: 'New Data Source',
+        method: '',
+        source: {},
+        destination: {}
+      };
+      
+      // Store rule data for reference
+      currentRules[ruleId] = rule;
+      
+      // Create rule element
+      createRuleElement(rule);
+      
+      // Update empty state
+      updateEmptyState();
+      
+      // Open the accordion for editing
+      const ruleElement = document.getElementById(ruleId);
+      if (ruleElement) {
+        const header = ruleElement.querySelector('.accordion-header');
+        if (header) {
+          toggleAccordion(header);
+        }
+      }
+    }
+    
+    // Create rule element
+    function createRuleElement(rule) {
+      console.log(`Creating rule element for rule ID: ${rule.id}`);
+      console.log(`Rule data:`, JSON.stringify(rule));
+      
+      // Store rule in global object FIRST, before creating UI elements
+      // This ensures that when we call updateIngestMethod, it has access to the complete rule data
+      currentRules[rule.id] = rule;
+      
+      const ruleElement = document.createElement('div');
+      ruleElement.className = 'accordion-item';
+      ruleElement.id = rule.id;
+      
+      // Determine status display
+      let statusBadge = '';
+      let statusText = 'Not yet run';
+      
+      if (rule.status) {
+        if (rule.status.result === 'SUCCESS') {
+          statusBadge = '<span class="status-badge success">SUCCESS</span>';
+          statusText = formatDate(rule.status.lastRun);
+        } else if (rule.status.result === 'ERROR') {
+          statusBadge = '<span class="status-badge error">ERROR</span>';
+          statusText = formatDate(rule.status.lastRun);
+        } else {
+          statusBadge = '<span class="status-badge new">NEW</span>';
+        }
+      } else {
+        statusBadge = '<span class="status-badge new">NEW</span>';
+      }
+      
+      // Create rule header
+      const headerElement = document.createElement('div');
+      headerElement.className = 'accordion-header';
+      headerElement.onclick = function() { toggleAccordion(this); };
+      
+      // Add source info display
+      let sourceInfo = '';
+      if (rule.method === 'email' && rule.source && rule.source.emailSearch) {
+        sourceInfo = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">${rule.source.emailSearch}</div>`;
+      } else if (rule.method === 'gSheet' && rule.source && rule.source.tabName) {
+        sourceInfo = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">Source: ${rule.source.tabName}</div>`;
+      }
+      
+      headerElement.innerHTML = `
+        <div class="rule-info">
+          <div class="rule-title">${rule.description || 'New Data Source'}</div>
+          <div class="rule-meta">
+            ${statusBadge}
+            <span>${statusText}</span>
+          </div>
+          ${sourceInfo}
+        </div>
+        <div class="arrow">▼</div>
+      `;
+      
+      // Create rule content with mini-tabs
+      const contentElement = document.createElement('div');
+      contentElement.className = 'accordion-content';
+      contentElement.innerHTML = `
+        <!-- Remove mini-tabs and show all content at once -->
+        <div class="rule-content-section">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">General</h4>
+          <div class="form-row checkbox-container">
+            <input type="checkbox" id="${rule.id}-active" ${rule.active !== false ? 'checked' : ''}>
+            <label for="${rule.id}-active">Rule Active</label>
+          </div>
+          
+          <div class="form-row">
+            <label>Description:<span class="required">*</span></label>
+            <input type="text" id="${rule.id}-description" value="${rule.description || ''}" 
+                   placeholder="Enter description" 
+                   onchange="updateRuleTitle(this, '${rule.id}')">
+            <div class="help-text">Brief description for identifying this rule</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Ingest Method:<span class="required">*</span></label>
+            <select id="${rule.id}-method" onchange="updateIngestMethod(this, '${rule.id}')">
+              <option value="">Select Method</option>
+              <option value="email" ${rule.method === 'email' ? 'selected' : ''}>Email</option>
+              <option value="gSheet" ${rule.method === 'gSheet' ? 'selected' : ''}>Google Sheet</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Source Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Source</h4>
+          <div id="${rule.id}-source-fields">
+            <!-- Source fields will be dynamically inserted based on ingest method -->
+          </div>
+        </div>
+        
+        <!-- Destination Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Destination</h4>
+          <div class="form-row">
+            <label>Destination Tab:<span class="required">*</span></label>
+            <input type="text" id="${rule.id}-dest-tab" value="${rule.destination?.tabName || ''}" 
+                   placeholder="Tab name" onchange="updateRuleData('${rule.id}')">
+            <div class="help-text">Name of the tab where data will be written</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Sheet Handling:</label>
+            <select id="${rule.id}-sheet-handling" onchange="updateRuleData('${rule.id}')">
+              <option value="clearAndReuse" ${(!rule.destination?.handlingMode || rule.destination?.handlingMode === 'clearAndReuse') ? 'selected' : ''}>Clear and Reuse</option>
+              <option value="recreate" ${rule.destination?.handlingMode === 'recreate' ? 'selected' : ''}>Recreate</option>
+              <option value="copyFormat" ${rule.destination?.handlingMode === 'copyFormat' ? 'selected' : ''}>Copy Format</option>
+              <option value="append" ${rule.destination?.handlingMode === 'append' ? 'selected' : ''}>Append</option>
+            </select>
+            <div class="help-text">How to handle existing destination data</div>
+          </div>
+        </div>
+        
+        <!-- Status Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Status</h4>
+          <div class="status-info">
+            <div class="status-info-indicator" style="background-color: ${getStatusColor(rule.status?.result || 'NEW')};"></div>
+            <div class="status-info-text">
+              <strong>${rule.status?.result || 'New'}:</strong> ${rule.status?.message || 'This rule has not been run yet'}
+            </div>
+          </div>
+          
+          <div style="font-size: 10px; margin-top: 5px; color: #5f6368;">
+            Last Run: ${rule.status?.lastRun ? formatDate(rule.status.lastRun) : 'Never'}
+          </div>
+        </div>
+        
+        <!-- Action buttons -->
+        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+          <button id="${rule.id}-run" class="btn btn-secondary btn-sm" onclick="runRule('${rule.id}')">Run Now</button>
+          <div>
+            <button id="${rule.id}-save" class="btn btn-success btn-sm" onclick="saveRule('${rule.id}')">Save</button>
+            <button id="${rule.id}-delete" class="btn btn-danger btn-sm" onclick="deleteRule('${rule.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+      
+      // Add elements to container
+      ruleElement.appendChild(headerElement);
+      ruleElement.appendChild(contentElement);
+      document.getElementById('rulesContainer').appendChild(ruleElement);
+      
+      // Initialize source fields based on method
+      if (rule.method) {
+        console.log(`Initializing source fields for rule ${rule.id} with method ${rule.method}`);
+        updateIngestMethod(document.getElementById(`${rule.id}-method`), rule.id);
+      }
+    }
+    
+    // Update ingest method for a rule
+    function updateIngestMethod(select, ruleId) {
+      const method = select.value;
+      const sourceFields = document.getElementById(`${ruleId}-source-fields`);
+      
+      // Update rule title with method
+      updateMethodInTitle(ruleId, method);
+      
+      if (!method) {
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <p>Please select an ingest method in the General tab first.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Get the COMPLETE current rule data from our global object - this is key
+      const rule = currentRules[ruleId] || {};
+      console.log(`Updating ingest method for rule ${ruleId}, method: ${method}`);
+      console.log(`Current rule data:`, JSON.stringify(rule));
+      
+      // Update method in the rule object
+      rule.method = method;
+      
+      // Ensure source object exists
+      if (!rule.source) {
+        rule.source = {};
+      }
+      
+      // Set source fields based on method
+      if (method === 'email') {
+        // Log the email search and attachment pattern values for debugging
+        console.log(`Email search: ${rule.source.emailSearch}, Attachment pattern: ${rule.source.attachmentPattern}`);
+        
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <label>Email Search:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-email-search" value="${rule.source.emailSearch || ''}" 
+                   placeholder="Gmail search query" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">e.g., subject:(Monthly Report) from:example.com</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Attachment Pattern:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-email-pattern" value="${rule.source.attachmentPattern || ''}" 
+                   placeholder="Regular expression pattern" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">e.g., Monthly_Report_.*\\.csv</div>
+          </div>
+        `;
+        
+        // Double-check that the fields got populated with the correct values
+        setTimeout(() => {
+          const emailSearchField = document.getElementById(`${ruleId}-email-search`);
+          const attachmentPatternField = document.getElementById(`${ruleId}-email-pattern`);
+          
+          console.log(`After DOM update, fields have values:`, {
+            emailSearch: emailSearchField ? emailSearchField.value : 'field not found',
+            attachmentPattern: attachmentPatternField ? attachmentPatternField.value : 'field not found'
+          });
+        }, 100);
+        
+      } else if (method === 'gSheet') {
+        // Log the sheet URL and tab name values for debugging
+        console.log(`Sheet URL: ${rule.source.sheetUrl}, Tab name: ${rule.source.tabName}`);
+        
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <label>Source Sheet URL:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-gsheet-url" value="${rule.source.sheetUrl || ''}" 
+                   placeholder="https://docs.google.com/spreadsheets/d/..." onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">Full Google Sheets URL of source</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Source Tab:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-gsheet-tab" value="${rule.source.tabName || ''}" 
+                   placeholder="Tab name" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">Name of the tab to read from</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Update rule data when form fields change
+    function updateRuleData(ruleId) {
+      if (!currentRules[ruleId]) {
+        currentRules[ruleId] = {};
+      }
+      
+      const rule = currentRules[ruleId];
+      rule.source = rule.source || {};
+      rule.destination = rule.destination || {};
+      
+      // Update based on method
+      if (rule.method === 'email') {
+        rule.source.emailSearch = document.getElementById(`${ruleId}-email-search`).value;
+        rule.source.attachmentPattern = document.getElementById(`${ruleId}-email-pattern`).value;
+      } else if (rule.method === 'gSheet') {
+        rule.source.sheetUrl = document.getElementById(`${ruleId}-gsheet-url`).value;
+        rule.source.tabName = document.getElementById(`${ruleId}-gsheet-tab`).value;
+      }
+      
+      // Update destination fields
+      rule.destination.tabName = document.getElementById(`${ruleId}-dest-tab`).value;
+      rule.destination.handlingMode = document.getElementById(`${ruleId}-sheet-handling`).value;
+      
+      // Update the header with source info
+      updateHeaderSourceInfo(ruleId, rule);
+      
+      // Save to server immediately
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (!result.success) {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert("Error saving rule data: " + error, true);
+        })
+        .saveRule(rule);
+    }
+    
+    // Update the header source info display
+    function updateHeaderSourceInfo(ruleId, rule) {
+      const header = document.querySelector(`#${ruleId} .rule-info`);
+      if (!header) return;
+      
+      // Remove existing source info
+      const existingInfo = header.querySelector('div:nth-child(3)');
+      if (existingInfo) {
+        existingInfo.remove();
+      }
+      
+      // Create new source info
+      let sourceInfoHTML = '';
+      if (rule.method === 'email' && rule.source && rule.source.emailSearch) {
+        sourceInfoHTML = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">${rule.source.emailSearch}</div>`;
+      } else if (rule.method === 'gSheet' && rule.source && rule.source.tabName) {
+        sourceInfoHTML = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">Source: ${rule.source.tabName}</div>`;
+      }
+      
+      if (sourceInfoHTML) {
+        const sourceDiv = document.createElement('div');
+        sourceDiv.innerHTML = sourceInfoHTML;
+        header.appendChild(sourceDiv.firstChild);
+      }
+    }
+    
+    // Update rule title when description changes
+    function updateRuleTitle(input, ruleId) {
+      const title = document.querySelector(`#${ruleId} .rule-title`);
+      const methodSelect = document.getElementById(`${ruleId}-method`);
+      const method = methodSelect.value;
+      
+      let methodDisplay = '';
+      if (method === 'email') methodDisplay = ' (Email)';
+      else if (method === 'gSheet') methodDisplay = ' (Google Sheet)';
+      
+      title.textContent = (input.value || "New Data Source") + methodDisplay;
+      
+      // Update stored rule data
+      if (currentRules[ruleId]) {
+        currentRules[ruleId].description = input.value;
+      }
+    }
+    
+    // Update method in rule title
+    function updateMethodInTitle(ruleId, method) {
+      const title = document.querySelector(`#${ruleId} .rule-title`);
+      const descInput = document.getElementById(`${ruleId}-description`);
+      const desc = descInput.value || "New Data Source";
+      
+      let methodDisplay = '';
+      if (method === 'email') methodDisplay = ' (Email)';
+      else if (method === 'gSheet') methodDisplay = ' (Google Sheet)';
+      
+      title.textContent = desc + methodDisplay;
+    }
+    
+    // Collect rule data from form
+    function collectRuleData(ruleId) {
+      const rule = {
+        id: ruleId,
+        active: document.getElementById(`${ruleId}-active`).checked,
+        description: document.getElementById(`${ruleId}-description`).value,
+        method: document.getElementById(`${ruleId}-method`).value,
+        source: {},
+        destination: {}
+      };
+      
+      // Collect method-specific source fields
+      if (rule.method === 'email') {
+        rule.source.emailSearch = document.getElementById(`${ruleId}-email-search`).value;
+        rule.source.attachmentPattern = document.getElementById(`${ruleId}-email-pattern`).value;
+      } else if (rule.method === 'gSheet') {
+        rule.source.sheetUrl = document.getElementById(`${ruleId}-gsheet-url`).value;
+        rule.source.tabName = document.getElementById(`${ruleId}-gsheet-tab`).value;
+      }
+      
+      // Collect destination fields
+      rule.destination.tabName = document.getElementById(`${ruleId}-dest-tab`).value;
+      rule.destination.handlingMode = document.getElementById(`${ruleId}-sheet-handling`).value;
+      
+      return rule;
+    }
+    
+    // Validate rule data
+    function validateRuleForm(rule) {
+      // Basic validation
+      if (!rule.description) {
+        showAlert("Description is required", true);
+        return false;
+      }
+      
+      if (!rule.method) {
+        showAlert("Ingest method is required", true);
+        return false;
+      }
+      
+      // Method-specific validation
+      if (rule.method === 'email') {
+        if (!rule.source.emailSearch) {
+          showAlert("Email search query is required", true);
+          return false;
+        }
+        if (!rule.source.attachmentPattern) {
+          showAlert("Attachment pattern is required", true);
+          return false;
+        }
+      } else if (rule.method === 'gSheet') {
+        if (!rule.source.sheetUrl) {
+          showAlert("Source sheet URL is required", true);
+          return false;
+        }
+        if (!rule.source.tabName) {
+          showAlert("Source tab name is required", true);
+          return false;
+        }
+      }
+      
+      // Destination validation
+      if (!rule.destination.tabName) {
+        showAlert("Destination tab name is required", true);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Save rule
+    function saveRule(ruleId) {
+      // Collect rule data
+      const rule = collectRuleData(ruleId);
+      
+      // Validate rule data
+      if (!validateRuleForm(rule)) {
+        return false;
+      }
+      
+      // Show spinner
+      showButtonSpinner(`${ruleId}-save`);
+      
+      // Save to server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-save`);
+          
+          if (result.success) {
+            showAlert(result.message);
+            
+            // Update stored rule data
+            if (result.rule) {
+              currentRules[ruleId] = result.rule;
+            }
+            
+            // Close accordion after a delay
+            setTimeout(function() {
+              const header = document.querySelector(`#${ruleId} .accordion-header`);
+              toggleAccordion(header);
+            }, 500);
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-save`);
+          showAlert("Error saving rule: " + error, true);
+        })
+        .saveRule(rule);
+    }
+    
+    // Run a specific rule
+    function runRule(ruleId) {
+      const rule = currentRules[ruleId];
+      if (!rule) {
+        showAlert("Rule not found", true);
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to run "${rule.description}"?`)) {
+        return;
+      }
+      
+      // Show spinner
+      showButtonSpinner(`${ruleId}-run`);
+      
+      // Run on server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-run`);
+          
+          if (result.success) {
+            showAlert(result.message);
+            
+            // Refresh rule to show updated status
+            refreshRules();
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-run`);
+          showAlert("Error running rule: " + error, true);
+        })
+        .runSelectedRules([ruleId]);
+    }
+    
+    // Delete rule
+    function deleteRule(ruleId) {
+      if (confirm("Are you sure you want to delete this data source?")) {
+        // Show spinner
+        showButtonSpinner(`${ruleId}-delete`);
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            // Hide spinner
+            hideButtonSpinner(`${ruleId}-delete`);
+            
+            if (result.success) {
+              showAlert(result.message);
+              
+              // Remove rule element
+              document.getElementById(ruleId).remove();
+              
+              // Remove from stored rules
+              delete currentRules[ruleId];
+              
+              // Update empty state
+              updateEmptyState();
+            } else {
+              showAlert(result.message, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+            // Hide spinner
+            hideButtonSpinner(`${ruleId}-delete`);
+            showAlert("Error deleting rule: " + error, true);
+          })
+          .deleteRule(ruleId);
+      }
+    }
+    
+    // Run selected rules
+    function runSelected() {
+      // Get all rule IDs
+      const ruleIds = Object.keys(currentRules);
+      
+      if (ruleIds.length === 0) {
+        showAlert("No rules to run", true);
+        return;
+      }
+      
+      // Show confirmation
+      if (!confirm(`Are you sure you want to run ${ruleIds.length} rule(s)?`)) {
+        return;
+      }
+      
+      // Show spinner
+      showButtonSpinner('runSelectedBtn');
+      
+      // Run on server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner('runSelectedBtn');
+          
+          if (result.success) {
+            showAlert(result.message);
+            
+            // Refresh rules to show updated status
+            refreshRules();
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner('runSelectedBtn');
+          showAlert("Error running rules: " + error, true);
+        })
+        .runSelectedRules(ruleIds);
+    }
+    
+    // Refresh rules from server
+    function refreshRules() {
+      google.script.run
+        .withSuccessHandler(function(rules) {
+          if (rules && rules.length > 0) {
+            // Clear current rules
+            document.getElementById('rulesContainer').innerHTML = '';
+            currentRules = {};
+            
+            // Recreate rules
+            rules.forEach(rule => {
+              createRuleElement(rule);
+              currentRules[rule.id] = rule;
+            });
+          }
+          
+          // Update empty state
+          updateEmptyState();
+        })
+        .getAllRules();
+    }
+    
+    // Update empty state visibility
+    function updateEmptyState() {
+      const ruleCount = document.querySelectorAll('.accordion-item').length;
+      const emptyState = document.getElementById('emptyState');
+      const actionBarContainer = document.getElementById('actionBarContainer');
+      
+      if (ruleCount > 0) {
+        // Hide empty state and show action bar when rules exist
+        if (emptyState) emptyState.style.display = 'none';
+        if (actionBarContainer) actionBarContainer.style.display = 'block';
+      } else {
+        // Show empty state and hide action bar when no rules
+        if (emptyState) emptyState.style.display = 'block';
+        if (actionBarContainer) actionBarContainer.style.display = 'none';
+      }
+    }
+    
+    // Populate log sessions
+    function populateLogSessions(logs) {
+      const container = document.getElementById('logSessionsContainer');
+      if (!container) return;
+      
+      // Clear existing logs
+      container.innerHTML = '';
+      
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>No logs available.</p>
+            <p>Run a data source to generate logs.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Add each session
+      logs.forEach(session => {
+        // Create session element
+        const sessionElement = document.createElement('div');
+        
+        // Format timestamp
+        const sessionTime = formatDate(session.timestamp);
+        
+        sessionElement.innerHTML = `
+          <div class="session-header" onclick="toggleSession(this)">
+            <div>Session: ${session.sessionId.substring(0, 12)}...</div>
+            <div class="arrow">▼</div>
+          </div>
+          <div class="session-content">
+            ${createLogEventsHTML(session.events)}
+          </div>
+        `;
+        
+        container.appendChild(sessionElement);
+      });
+    }
+    
+    // Create HTML for log events
+    function createLogEventsHTML(events) {
+      if (!events || events.length === 0) {
+        return '<div class="log-entry log-neutral">No events in this session</div>';
+      }
+      
+      return events.map(event => {
+        const eventClass = getEventClass(event.type);
+        const time = formatTime(event.timestamp);
+        
+        return `
+          <div class="log-entry ${eventClass}">
+            <div class="log-time">${time}</div>
+            <div class="log-event">${event.type}</div>
+            <div class="log-message">${event.message}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Get log event class based on type
+    function getEventClass(eventType) {
+      switch (eventType) {
+        case 'SUCCESS':
+        case 'COMPLETE':
+          return 'log-success';
+        case 'ERROR':
+          return 'log-error';
+        case 'WARNING':
+        case 'SKIPPED':
+          return 'log-warning';
+        default:
+          return 'log-neutral';
+      }
+    }
+    
+    // Filter logs by text
+    function filterLogs(query) {
+      query = query.toLowerCase();
+      const logEntries = document.querySelectorAll('.log-entry');
+      
+      logEntries.forEach(entry => {
+        const text = entry.textContent.toLowerCase();
+        if (query === '' || text.includes(query)) {
+          entry.style.display = 'block';
+        } else {
+          entry.style.display = 'none';
+        }
+      });
+      
+      // Also show/hide empty session headers
+      document.querySelectorAll('.session-content').forEach(session => {
+        const visibleEntries = Array.from(session.querySelectorAll('.log-entry'))
+          .filter(entry => entry.style.display !== 'none');
+        
+        const sessionHeader = session.previousElementSibling;
+        if (visibleEntries.length === 0 && query !== '') {
+          sessionHeader.style.display = 'none';
+        } else {
+          sessionHeader.style.display = 'flex';
+        }
+      });
+    }
+    
+    // Clear all logs
+    function clearLogs() {
+      if (confirm("Are you sure you want to clear all logs?")) {
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if (response.success) {
+              showAlert("Logs have been cleared");
+              
+              // Update logs container
+              document.getElementById('logSessionsContainer').innerHTML = `
+                <div class="empty-state">
+                  <p>No logs available.</p>
+                  <p>Run a data source to generate logs.</p>
+                </div>
+              `;
+            } else {
+              showAlert(response.message, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showAlert("Error clearing logs: " + error, true);
+          })
+          .clearAllLogs();
+      }
+    }
+    
+    // Set up schedule UI based on saved settings
+    function setupScheduleUI(schedule) {
+      if (!schedule) return;
+      
+      // Set frequency
+      const frequencySelect = document.getElementById('scheduleFrequency');
+      if (frequencySelect && schedule.frequency) {
+        frequencySelect.value = schedule.frequency;
+        handleFrequencyChange(schedule.frequency);
+      }
+      
+      // Set time
+      const timeInput = document.getElementById('scheduleTime');
+      if (timeInput && schedule.time) {
+        timeInput.value = schedule.time;
+      }
+      
+      // Set day of week
+      const dayOfWeekSelect = document.getElementById('scheduleDayOfWeek');
+      if (dayOfWeekSelect && schedule.dayOfWeek) {
+        dayOfWeekSelect.value = schedule.dayOfWeek;
+      }
+      
+      // Set day of month
+      const dayOfMonthSelect = document.getElementById('scheduleDayOfMonth');
+      if (dayOfMonthSelect && schedule.dayOfMonth) {
+        dayOfMonthSelect.value = schedule.dayOfMonth;
+      }
+      
+      // Set notification email
+      const emailInput = document.getElementById('notificationEmail');
+      if (emailInput && schedule.notificationEmail) {
+        emailInput.value = schedule.notificationEmail;
+      }
+    }
+    
+    // Handle frequency change in schedule
+    function handleFrequencyChange(frequency) {
+      const timeSettings = document.getElementById('timeSettings');
+      const daySelection = document.getElementById('daySelection');
+      const dateSelection = document.getElementById('dateSelection');
+      
+      if (frequency === 'manual') {
+        timeSettings.style.display = 'none';
+      } else {
+        timeSettings.style.display = 'block';
+        
+        // Show/hide day selection for weekly option
+        daySelection.style.display = frequency === 'weekly' ? 'block' : 'none';
+        
+        // Show/hide date selection for monthly option
+        dateSelection.style.display = frequency === 'monthly' ? 'block' : 'none';
+      }
+    }
+    
+    // Save schedule settings
+    function saveSchedule() {
+      const schedule = {
+        frequency: document.getElementById('scheduleFrequency').value,
+        time: document.getElementById('scheduleTime').value,
+        dayOfWeek: document.getElementById('scheduleDayOfWeek').value,
+        dayOfMonth: document.getElementById('scheduleDayOfMonth').value,
+        notificationEmail: document.getElementById('notificationEmail').value
+      };
+      
+      // Show spinner
+      showButtonSpinner('saveScheduleBtn');
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner('saveScheduleBtn');
+          
+          if (result.success) {
+            showAlert("Schedule settings saved");
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner('saveScheduleBtn');
+          showAlert("Error saving schedule: " + error, true);
+        })
+        .saveSchedule(schedule);
+    }
+    
+    // Show spinner on button
+    function showButtonSpinner(buttonId) {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      
+      // Create spinner container and add to button
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner-container';
+      spinner.innerHTML = '<div class="spinner"></div>';
+      button.style.position = 'relative';
+      button.appendChild(spinner);
+      button.disabled = true;
+    }
+    
+    // Hide spinner from button
+    function hideButtonSpinner(buttonId) {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      
+      // Remove spinner container
+      const spinner = button.querySelector('.spinner-container');
+      if (spinner) button.removeChild(spinner);
+      button.disabled = false;
+    }
+    
+    // Show alert message
+    function showAlert(message, isError) {
+      const alertBox = document.getElementById('alertBox');
+      const alertMessage = document.getElementById('alertMessage');
+      
+      // Set message
+      alertMessage.textContent = message;
+      
+      // Set style
+      if (isError) {
+        alertBox.className = 'alert alert-error';
+      } else {
+        alertBox.className = 'alert alert-success';
+      }
+      
+      // Show the alert
+      alertBox.style.display = 'block';
+      
+      // Hide after a delay
+      setTimeout(function() {
+        alertBox.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Format date
+    function formatDate(dateString) {
+      if (!dateString) return 'Never';
+      
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+    
+    // Format time
+    function formatTime(dateString) {
+      if (!dateString) return '';
+      
+      const date = new Date(dateString);
+      return date.toLocaleTimeString();
+    }
+    
+    // Get status color based on result
+    function getStatusColor(status) {
+      switch (status) {
+        case 'SUCCESS':
+          return '#34a853'; // Green
+        case 'ERROR':
+          return '#ea4335'; // Red
+        case 'SKIPPED':
+          return '#fbbc04'; // Yellow
+        case 'NEW':
+          return '#4285f4'; // Blue
+        default:
+          return '#5f6368'; // Gray
+      }
+    }
+    
+    // Initialize when page loads
+    window.onload = function() {
+      initializeSidebar();
+    };
+  </script>
+</body>
+</html>
