@@ -86,21 +86,7 @@ const CONFIG = {
     }
   };
   
-  /**
-   * Creates the menu items when the spreadsheet is opened
-   */
-  function onOpen() {
-    Logger.log("Initializing menu items");
-    const ui = SpreadsheetApp.getUi();
-    ui.createMenu('Data Ingest')
-      .addItem('Run All Rules', 'runAll')
-      .addItem('Run Selected Rules', 'runSelectedRules')
-      .addSeparator()
-      .addItem('Create/Update Sheets', 'setupSheets')
-      .addItem('Validate Configuration', 'validateConfiguration')
-      .addToUi();
-    Logger.log("Menu items created successfully");
-  }
+  
   
   /**
    * Creates or updates both configuration and log sheets

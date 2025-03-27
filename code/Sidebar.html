@@ -1,0 +1,3075 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Data Ingest Manager</title>
+  <style>
+    /* Sidebar-optimized styles */
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 8px;
+      font-size: 12px;
+      color: #202124;
+      max-width: 300px;
+    }
+    
+    h2 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .add-button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+      line-height: 24px;
+      text-align: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      margin: 0 3px 5px 0;
+      position: relative;
+      min-width: 60px;
+    }
+    
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    
+    .btn-secondary {
+      background-color: #5f6368;
+    }
+    
+    .btn-success {
+      background-color: #34a853;
+    }
+    
+    .btn-danger {
+      background-color: #ea4335;
+    }
+    
+    .action-bar {
+      display: flex;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    
+    /* Tabs styling */
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .tab {
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .tab.active {
+      font-weight: bold;
+      border-bottom: 2px solid #4285f4;
+    }
+    
+    /* Accordion styling for rules */
+    .accordion-item {
+      margin-bottom: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+    
+    .accordion-header {
+      padding: 6px 8px;
+      cursor: pointer;
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .rule-info {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+    
+    .rule-title {
+      font-weight: bold;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    
+    .rule-meta {
+      display: flex;
+      gap: 4px;
+      font-size: 9px;
+      color: #5f6368;
+      margin-top: 2px;
+      align-items: center;
+    }
+    
+    .status-badge {
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    
+    .success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    
+    .error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    
+    .skipped {
+      background-color: #fef7e0;
+      color: #ea8600;
+    }
+    
+    .new {
+      background-color: #e8f0fe;
+      color: #1a73e8;
+    }
+    
+    .arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    
+    .accordion-content {
+      display: none;
+      padding: 8px;
+      font-size: 11px;
+    }
+    
+    /* Rule tab styles */
+    .mini-tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+    
+    .mini-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 4px;
+      font-size: 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .mini-tab.active {
+      border-bottom: 2px solid #4285f4;
+      font-weight: bold;
+      color: #4285f4;
+    }
+    
+    .mini-tab-content {
+      padding: 5px 0;
+      display: none;
+    }
+    
+    /* Form controls */
+    .form-row {
+      margin-bottom: 6px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="time"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 4px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    
+    .help-text {
+      font-size: 9px;
+      color: #5f6368;
+      margin-top: 2px;
+    }
+    
+    .required {
+      color: #d93025;
+      margin-left: 2px;
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    
+    .checkbox-container input {
+      width: auto;
+      margin-right: 5px;
+    }
+    
+    /* Status indicator */
+    .status-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 5px;
+      border-radius: 4px;
+      background: #f8f9fa;
+    }
+    
+    .status-info-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-info-text {
+      font-size: 10px;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 20px 0;
+      color: #5f6368;
+    }
+    
+    .empty-state p {
+      margin-bottom: 15px;
+    }
+    
+    /* Log styling */
+    .log-entry {
+      font-size: 10px;
+      padding: 4px;
+      margin-bottom: 3px;
+      border-radius: 3px;
+    }
+    
+    .log-neutral {
+      background-color: #f8f9fa;
+    }
+    
+    .log-success {
+      background-color: #e6f4ea;
+    }
+    
+    .log-error {
+      background-color: #fce8e6;
+    }
+    
+    .log-warning {
+      background-color: #fef7e0;
+    }
+    
+    .log-time {
+      font-weight: bold;
+      display: inline-block;
+      width: 70px;
+    }
+    
+    .log-event {
+      font-weight: bold;
+      display: inline-block;
+      width: 70px;
+    }
+    
+    .session-header {
+      background-color: #f1f3f4;
+      padding: 4px 6px;
+      margin-bottom: 5px;
+      border-radius: 3px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .session-content {
+      display: none;
+      margin-bottom: 10px;
+    }
+    
+    /* Spinner for loading */
+    .spinner-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255,255,255,0.7);
+      border-radius: 4px;
+    }
+    
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(66, 133, 244, 0.3);
+      border-radius: 50%;
+      border-top-color: #4285f4;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Schedule Tab */
+    .schedule-section {
+      margin-bottom: 15px;
+    }
+    
+    /* Alert box for messages */
+    .alert {
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .alert-success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    
+    .alert-error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    
+    /* Progress tracking styles */
+    .progress-container {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      display: none;
+    }
+    
+    .progress-bar-outer {
+      height: 10px;
+      background-color: #f1f3f4;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    
+    .progress-bar-inner {
+      height: 100%;
+      background-color: #4285f4;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-status {
+      font-size: 10px;
+      color: #5f6368;
+    }
+    
+    .cancel-button {
+      background-color: #ea4335;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    
+    .progress-summary {
+      margin-top: 10px;
+      padding: 8px;
+      background-color: #e8f0fe;
+      border-radius: 4px;
+      font-size: 11px;
+      display: none;
+    }
+    
+    .validation-info {
+      margin-top: 8px;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .validation-success {
+      color: #0b8043;
+      background-color: #e6f4ea;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    
+    .validation-warning {
+      color: #b06000;
+      background-color: #fef7e0;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    
+    /* Active processes styles */
+    .active-processes-container {
+      margin: 12px 0;
+      max-height: 400px;
+      overflow-y: auto;
+      width: auto;
+    }
+    
+    .active-processes-container h3 {
+      margin-top: 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #202124;
+      border-bottom: 1px solid #dadce0;
+      padding-bottom: 8px;
+    }
+    
+    .active-process {
+      padding: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background-color: white;
+    }
+    
+    .active-process div {
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .delete-button {
+      background-color: #9e9e9e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 5px;
+      margin-left: 5px;
+    }
+    
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background-color: #f0f4f8;
+      border: 1px solid #d0d9e1;
+      border-radius: 4px;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    
+    .session-id {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .session-content {
+      display: none;
+      border: 1px solid #e0e0e0;
+      border-top: none;
+      padding: 5px;
+      background-color: #fff;
+      margin-bottom: 10px;
+    }
+    
+    /* Log Card Styles */
+    .log-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: box-shadow 0.3s;
+      margin-bottom: 15px;
+    }
+    
+    .log-card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+      padding: 12px 15px;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    .card-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin: 0 0 5px 0;
+      color: #333;
+      word-break: break-word;
+    }
+    
+    .card-time {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    
+    .session-id {
+      font-size: 11px;
+      color: #888;
+      font-family: monospace;
+    }
+    
+    .card-body {
+      padding: 15px;
+    }
+    
+    .status-summary {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .status-item {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .status-count {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 2px;
+    }
+    
+    .status-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #666;
+    }
+    
+    .status-success { color: #0f9d58; }
+    .status-error { color: #db4437; }
+    .status-warning { color: #f4b400; }
+    .status-info { color: #4285f4; }
+    
+    .progress-container {
+      height: 8px;
+      background-color: #f1f1f1;
+      border-radius: 4px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      border-radius: 4px;
+      background-color: #4285f4;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-complete { background-color: #0f9d58; }
+    .progress-warning { background-color: #f4b400; }
+    .progress-error { background-color: #db4437; }
+    
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 15px;
+      background-color: #f8f9fa;
+      border-top: 1px solid #eee;
+    }
+    
+    /* Spinner Animation */
+    .spinning {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Toast Notifications */
+    #toastContainer {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    
+    .toast {
+      padding: 10px 15px;
+      margin-top: 10px;
+      border-radius: 4px;
+      color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      opacity: 1;
+      transition: opacity 0.5s;
+      max-width: 300px;
+    }
+    
+    .toast-success {
+      background-color: #0f9d58;
+    }
+    
+    .toast-error {
+      background-color: #db4437;
+    }
+    
+    .toast-hiding {
+      opacity: 0;
+    }
+    
+    /* Log Event Styles for detail modal */
+    .log-events-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    
+    .log-event {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .log-event:last-child {
+      border-bottom: none;
+    }
+    
+    .log-info { background-color: #f8f9fa; }
+    .log-success { background-color: #e6f4ea; }
+    .log-warning { background-color: #fef7e0; }
+    .log-error { background-color: #fce8e6; }
+    
+    .log-event-time {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .log-event-type {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background-color: #eee;
+    }
+    
+    .log-info .log-event-type { background-color: #d2e3fc; color: #1a73e8; }
+    .log-success .log-event-type { background-color: #ceead6; color: #0f9d58; }
+    .log-warning .log-event-type { background-color: #feefc3; color: #f4b400; }
+    .log-error .log-event-type { background-color: #fad2cf; color: #d93025; }
+    
+    .log-event-message {
+      font-size: 13px;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h2>
+    Data Ingest Manager
+    <button class="add-button" onclick="addNewRule()">+</button>
+  </h2>
+  
+  <!-- Alert box for messages -->
+  <div id="alertBox" class="alert">
+    <span id="alertMessage"></span>
+  </div>
+  
+  <div class="tabs">
+    <div class="tab active" id="rulesTab" onclick="switchTab('rules')">Data Sources</div>
+    <div class="tab" id="logsTab" onclick="switchTab('logs')">Logs</div>
+    <div class="tab" id="activeJobsTab" onclick="switchTab('activeJobs')">Active Jobs</div>
+    <div class="tab" id="scheduleTab" onclick="switchTab('schedule')">Schedule</div>
+  </div>
+  
+  <!-- Data Sources Tab -->
+  <div id="rulesContent">
+    <div id="actionBarContainer" style="display:none;">
+      <div class="action-bar">
+        <button id="runSelectedBtn" class="btn btn-secondary" onclick="runSelected()">▶️ Run Selected</button>
+      </div>
+    </div>
+    
+    <div id="rulesContainer">
+      <!-- Rules will be loaded here -->
+      <div id="emptyState" class="empty-state">
+        <p>No data sources configured yet.</p>
+        <p>Click the <b>+</b> button in the top-right corner to add your first data source.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Active Jobs Tab -->
+  <div id="activeJobsContent" style="display:none;">
+    <div class="action-bar" style="justify-content: flex-end;">
+      <button id="refreshJobsBtn" class="btn btn-sm btn-secondary" onclick="checkForActiveProcesses()" 
+              title="Refresh job status">Refresh</button>
+    </div>
+    <div id="activeProcessesContainer">
+      <h3>Active Processes</h3>
+      <div id="activeProcessesList">
+        <!-- Active processes will be populated here -->
+        <div class="empty-state">
+          <p>No active processes at this time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Logs Tab -->
+  <div id="logsContent" style="display:none;">
+    <div class="action-bar" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <div style="display: flex; align-items: center; width: 70%;">
+        <input type="text" placeholder="Filter logs..." style="width:100%; margin-right: 5px;" 
+             onkeyup="filterLogs(this.value)">
+        <button class="btn btn-sm btn-secondary" onclick="refreshLogs()" 
+                title="Refresh logs">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-secondary" onclick="exportAllLogs()" 
+                title="Export all logs to sheet">📊 Export All</button>
+      <button id="clearLogsBtn" class="btn btn-sm btn-secondary" onclick="clearLogs()" 
+                title="Clear all logs">🧹 Clear</button>
+      </div>
+    </div>
+    <div id="logSessionsContainer">
+      <!-- Log sessions will be populated dynamically -->
+      <div class="empty-state">
+        <p>No logs available.</p>
+        <p>Run a data source to generate logs.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Schedule Tab -->
+  <div id="scheduleContent" style="display:none;">
+    <div class="action-bar" style="justify-content: space-between; align-items: center;">
+      <button id="saveScheduleBtn" class="btn btn-success" onclick="saveSchedule()">💾 Save Schedule</button>
+      <button id="runNowBtn" class="btn btn-secondary" onclick="runScheduleNow()" title="Run all active rules now">⚡ Run Now</button>
+    </div>
+    
+    <div class="schedule-status-container" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px;">
+      <div id="scheduleStatus">Loading schedule status...</div>
+    </div>
+    
+    <div style="margin-top: 15px;">
+      <div class="form-row">
+        <label>Run Frequency:</label>
+        <select id="scheduleFrequency" onchange="handleFrequencyChange(this.value)" style="width: 100%;">
+          <option value="manual">Manual Only</option>
+          <option value="one-time">One-time</option>
+          <option value="hourly">Hourly</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      
+      <!-- One-time schedule options -->
+      <div id="oneTimeOptions" class="schedule-options" style="display: none;">
+        <div class="form-row">
+          <label>Date:</label>
+          <input type="date" id="scheduleDate" style="width: 100%;">
+        </div>
+        <div class="form-row">
+          <label>Time:</label>
+          <input type="time" id="scheduleOneTime" style="width: 100%;">
+        </div>
+        </div>
+        
+      <!-- Daily schedule options -->
+      <div id="dailyOptions" class="schedule-options" style="display: none;">
+        <div class="form-row">
+          <label>Time of day:</label>
+          <input type="time" id="scheduleTime" style="width: 100%;">
+        </div>
+      </div>
+      
+      <!-- Weekly schedule options -->
+      <div id="weeklyOptions" class="schedule-options" style="display: none;">
+        <div class="form-row">
+          <label>Day of week:</label>
+          <select id="scheduleDayOfWeek" style="width: 100%;">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="0">Sunday</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Time of day:</label>
+          <input type="time" id="scheduleWeeklyTime" style="width: 100%;">
+        </div>
+        </div>
+        
+      <!-- Monthly schedule options -->
+      <div id="monthlyOptions" class="schedule-options" style="display: none;">
+        <div class="form-row">
+          <label>Day of month:</label>
+          <select id="scheduleDayOfMonth" style="width: 100%;">
+            <option value="1">1st</option>
+            <option value="2">2nd</option>
+            <option value="3">3rd</option>
+            <option value="4">4th</option>
+            <option value="5">5th</option>
+            <option value="6">6th</option>
+            <option value="7">7th</option>
+            <option value="8">8th</option>
+            <option value="9">9th</option>
+            <option value="10">10th</option>
+            <option value="11">11th</option>
+            <option value="12">12th</option>
+            <option value="13">13th</option>
+            <option value="14">14th</option>
+            <option value="15">15th</option>
+            <option value="16">16th</option>
+            <option value="17">17th</option>
+            <option value="18">18th</option>
+            <option value="19">19th</option>
+            <option value="20">20th</option>
+            <option value="21">21st</option>
+            <option value="22">22nd</option>
+            <option value="23">23rd</option>
+            <option value="24">24th</option>
+            <option value="25">25th</option>
+            <option value="26">26th</option>
+            <option value="27">27th</option>
+            <option value="28">28th</option>
+            <option value="29">29th</option>
+            <option value="30">30th</option>
+            <option value="31">31st</option>
+            <option value="last">Last day</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Time of day:</label>
+          <input type="time" id="scheduleMonthlyTime" style="width: 100%;">
+      </div>
+      </div>
+      
+      <!-- Email notification -->
+      <div id="notificationOptions" class="schedule-options" style="display: none; margin-top: 15px;">
+        <div class="form-row">
+          <label>Email notifications:</label>
+          <input type="text" id="notificationEmail" placeholder="email@example.com" style="width: 100%;">
+        </div>
+        <div class="form-help">Optional: Enter email(s) to receive notifications when scheduled runs complete. Separate multiple emails with commas.</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Global variables
+    let appData = {};
+    let ruleCounter = 0;
+    let currentRules = {};
+    let activeProcesses = {}; // Track active processing jobs
+    
+    // Initialize the sidebar
+    function initializeSidebar() {
+      // Show loading indicator
+      document.body.innerHTML += '<div id="loading" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;"><div style="padding:20px;background:white;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.1);"><div class="spinner"></div><div style="margin-top:10px;">Loading...</div></div></div>';
+      
+      console.log("Initializing sidebar...");
+      
+      // Initialize the currentRules object
+      currentRules = {};
+      
+      try {
+      // Get data from server
+      google.script.run
+        .withSuccessHandler(function(data) {
+            try {
+          // Store the data globally
+          appData = data;
+              
+              console.log("Received sidebar data from server", data);
+          
+          // Load rules
+          if (data.config && data.config.rules && data.config.rules.length > 0) {
+                console.log(`Found ${data.config.rules.length} rules in configuration`);
+                
+                // Clear the rules container first
+                document.getElementById('rulesContainer').innerHTML = '';
+                
+                // Process each rule
+            data.config.rules.forEach(rule => {
+                  console.log(`Processing rule: ${rule.id} - ${rule.description}`);
+                  
+                  // Create the rule element (this will also store the rule in currentRules)
+              createRuleElement(rule);
+            });
+              } else {
+                console.log("No rules found in configuration");
+          }
+          
+          // Load logs
+          if (data.logs && data.logs.length > 0) {
+                console.log(`Found ${data.logs.length} log sessions`);
+            populateLogSessions(data.logs);
+              } else {
+                console.log("No logs found");
+                // Show empty state for logs
+                const logSessionsContainer = document.getElementById('logSessionsContainer');
+                if (logSessionsContainer) {
+                  logSessionsContainer.innerHTML = `
+                    <div class="empty-state">
+                      <p>No logs available.</p>
+                      <p>Run a data source to generate logs.</p>
+                    </div>
+                  `;
+                }
+          }
+          
+          // Update empty state
+          updateEmptyState();
+          
+          // Setup schedule UI based on saved settings
+          if (data.config && data.config.preferences && data.config.preferences.schedule) {
+                console.log("Setting up schedule UI with saved preferences");
+            setupScheduleUI(data.config.preferences.schedule);
+          }
+          
+          // Remove loading indicator
+              if (document.getElementById('loading')) {
+          document.getElementById('loading').remove();
+              }
+            } catch (error) {
+              console.error("Error during sidebar initialization after getting data:", error);
+              
+              // Remove loading indicator
+              if (document.getElementById('loading')) {
+                document.getElementById('loading').remove();
+              }
+              
+              // Show error message
+              document.body.innerHTML += `
+                <div style="color: red; background: #ffe6e6; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                  Error initializing sidebar: ${error.message || error}
+                  <br><br>
+                  <button onclick="location.reload()">Reload Sidebar</button>
+                </div>
+              `;
+            }
+        })
+        .withFailureHandler(function(error) {
+            console.error("Error loading sidebar data:", error);
+            
+          // Remove loading indicator if it exists
+          if (document.getElementById('loading')) {
+            document.getElementById('loading').remove();
+          }
+            
+            // Show more detailed error message
+            document.body.innerHTML += `
+              <div style="color: red; background: #ffe6e6; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                Failed to load data from server: ${error}
+                <br><br>
+                <button onclick="location.reload()">Reload Sidebar</button>
+              </div>
+            `;
+        })
+        .getSidebarData();
+      } catch (error) {
+        console.error("Critical error initializing sidebar:", error);
+        
+        // Remove loading indicator
+        if (document.getElementById('loading')) {
+          document.getElementById('loading').remove();
+        }
+        
+        // Show error message
+        document.body.innerHTML += `
+          <div style="color: red; background: #ffe6e6; padding: 10px; margin: 10px 0; border-radius: 4px;">
+            Critical error: ${error.message || error}
+            <br><br>
+            <button onclick="location.reload()">Reload Sidebar</button>
+          </div>
+        `;
+      }
+    }
+    
+    // Switch between tabs
+    function switchTab(tabName) {
+      // Hide all content divs
+      document.getElementById('rulesContent').style.display = 'none';
+      document.getElementById('logsContent').style.display = 'none';
+      document.getElementById('activeJobsContent').style.display = 'none';
+      document.getElementById('scheduleContent').style.display = 'none';
+      
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected content and set tab as active
+      document.getElementById(tabName + 'Content').style.display = 'block';
+      document.getElementById(tabName + 'Tab').classList.add('active');
+      
+      // Special actions for specific tabs
+      if (tabName === 'logs') {
+        refreshLogs();
+      } else if (tabName === 'activeJobs') {
+        checkForActiveProcesses();
+      } else if (tabName === 'schedule') {
+        refreshScheduleStatus();
+      }
+    }
+    
+    // Toggle accordion panel
+    function toggleAccordion(element) {
+      const content = element.nextElementSibling;
+      const arrow = element.querySelector('.arrow');
+      
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Toggle log session details
+    function toggleSession(header) {
+      const content = header.nextElementSibling;
+      const arrow = header.querySelector('.arrow');
+      
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Add a new rule
+    function addNewRule() {
+      // Create unique ID for the new rule
+      const ruleId = 'rule-' + new Date().getTime();
+      
+      // Create new rule object
+      const rule = {
+        id: ruleId,
+        active: true,
+        description: 'New Data Source',
+        method: '',
+        source: {},
+        destination: {}
+      };
+      
+      // Store rule data for reference
+      currentRules[ruleId] = rule;
+      
+      // Create rule element
+      createRuleElement(rule);
+      
+      // Update empty state
+      updateEmptyState();
+      
+      // Open the accordion for editing
+      const ruleElement = document.getElementById(ruleId);
+      if (ruleElement) {
+        const header = ruleElement.querySelector('.accordion-header');
+        if (header) {
+          toggleAccordion(header);
+        }
+      }
+    }
+    
+    // Create rule element
+    function createRuleElement(rule) {
+      console.log(`Creating rule element for rule ID: ${rule.id}`);
+      console.log(`Rule data:`, JSON.stringify(rule));
+      
+      // Store rule in global object FIRST, before creating UI elements
+      // This ensures that when we call updateIngestMethod, it has access to the complete rule data
+      currentRules[rule.id] = rule;
+      
+      const ruleElement = document.createElement('div');
+      ruleElement.className = 'accordion-item';
+      ruleElement.id = rule.id;
+      
+      // Determine status display
+      let statusBadge = '';
+      let statusText = 'Not yet run';
+      
+      if (rule.status) {
+        if (rule.status.result === 'SUCCESS') {
+          statusBadge = '<span class="status-badge success">SUCCESS</span>';
+          statusText = formatDate(rule.status.lastRun);
+        } else if (rule.status.result === 'ERROR') {
+          statusBadge = '<span class="status-badge error">ERROR</span>';
+          statusText = formatDate(rule.status.lastRun);
+        } else {
+          statusBadge = '<span class="status-badge new">NEW</span>';
+        }
+      } else {
+        statusBadge = '<span class="status-badge new">NEW</span>';
+      }
+      
+      // Create rule header
+      const headerElement = document.createElement('div');
+      headerElement.className = 'accordion-header';
+      headerElement.onclick = function() { toggleAccordion(this); };
+      
+      // Add source info display
+      let sourceInfo = '';
+      if (rule.method === 'email' && rule.source && rule.source.emailSearch) {
+        sourceInfo = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">${rule.source.emailSearch}</div>`;
+      } else if (rule.method === 'gSheet' && rule.source && rule.source.tabName) {
+        sourceInfo = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">Source: ${rule.source.tabName}</div>`;
+      }
+      
+      headerElement.innerHTML = `
+        <div class="rule-info">
+          <div class="rule-title">${rule.description || 'New Data Source'}</div>
+          <div class="rule-meta">
+            ${statusBadge}
+            <span>${statusText}</span>
+          </div>
+          ${sourceInfo}
+        </div>
+        <div class="arrow">▼</div>
+      `;
+      
+      // Create rule content with mini-tabs
+      const contentElement = document.createElement('div');
+      contentElement.className = 'accordion-content';
+      contentElement.innerHTML = `
+        <!-- Remove mini-tabs and show all content at once -->
+        <div class="rule-content-section">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">General</h4>
+          <div class="form-row checkbox-container">
+            <input type="checkbox" id="${rule.id}-active" ${rule.active !== false ? 'checked' : ''}>
+            <label for="${rule.id}-active">Rule Active</label>
+          </div>
+          
+          <div class="form-row">
+            <label>Description:<span class="required">*</span></label>
+            <input type="text" id="${rule.id}-description" value="${rule.description || ''}" 
+                   placeholder="Enter description" 
+                   onchange="updateRuleTitle(this, '${rule.id}')">
+            <div class="help-text">Brief description for identifying this rule</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Ingest Method:<span class="required">*</span></label>
+            <select id="${rule.id}-method" onchange="updateIngestMethod(this, '${rule.id}')">
+              <option value="">Select Method</option>
+              <option value="email" ${rule.method === 'email' ? 'selected' : ''}>Email</option>
+              <option value="gSheet" ${rule.method === 'gSheet' ? 'selected' : ''}>Google Sheet</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Source Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Source</h4>
+          <div id="${rule.id}-source-fields">
+            <!-- Source fields will be dynamically inserted based on ingest method -->
+          </div>
+        </div>
+        
+        <!-- Destination Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Destination</h4>
+          <div class="form-row">
+            <label>Destination Tab:<span class="required">*</span></label>
+            <input type="text" id="${rule.id}-dest-tab" value="${rule.destination?.tabName || ''}" 
+                   placeholder="Tab name" onchange="updateRuleData('${rule.id}')">
+            <div class="help-text">Name of the tab where data will be written</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Sheet Handling:</label>
+            <select id="${rule.id}-sheet-handling" onchange="updateRuleData('${rule.id}')">
+              <option value="clearAndReuse" ${(!rule.destination?.handlingMode || rule.destination?.handlingMode === 'clearAndReuse') ? 'selected' : ''}>Clear and Reuse</option>
+              <option value="recreate" ${rule.destination?.handlingMode === 'recreate' ? 'selected' : ''}>Recreate</option>
+              <option value="copyFormat" ${rule.destination?.handlingMode === 'copyFormat' ? 'selected' : ''}>Copy Format</option>
+              <option value="append" ${rule.destination?.handlingMode === 'append' ? 'selected' : ''}>Append</option>
+            </select>
+            <div class="help-text">How to handle existing destination data</div>
+          </div>
+        </div>
+        
+        <!-- Status Section -->
+        <div class="rule-content-section" style="margin-top: 15px;">
+          <h4 style="margin: 5px 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">Status</h4>
+          <div class="status-info">
+            <div class="status-info-indicator" style="background-color: ${getStatusColor(rule.status?.result || 'NEW')};"></div>
+            <div class="status-info-text">
+              <strong>${rule.status?.result || 'New'}:</strong> ${rule.status?.message || 'This rule has not been run yet'}
+            </div>
+          </div>
+          
+          <div style="font-size: 10px; margin-top: 5px; color: #5f6368;">
+            Last Run: ${rule.status?.lastRun ? formatDate(rule.status.lastRun) : 'Never'}
+          </div>
+        </div>
+        
+        <!-- Action buttons -->
+        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+          <button id="${rule.id}-run" class="btn btn-secondary btn-sm" onclick="runRule('${rule.id}')">⚡ Run Now</button>
+          <div>
+            <button id="${rule.id}-save" class="btn btn-success btn-sm" onclick="saveRule('${rule.id}')">💾 Save</button>
+            <button id="${rule.id}-delete" class="btn btn-danger btn-sm" onclick="deleteRule('${rule.id}')">🗑️ Delete</button>
+          </div>
+        </div>
+        
+        <!-- Progress tracking section (hidden by default) -->
+        <div id="${rule.id}-progress-container" class="progress-container">
+          <div class="progress-bar-outer">
+            <div id="${rule.id}-progress-bar" class="progress-bar-inner" style="width: 0%"></div>
+          </div>
+          <div id="${rule.id}-progress-status" class="progress-status">Preparing...</div>
+          <button id="${rule.id}-cancel-btn" class="cancel-button" onclick="cancelRuleProcessing('${rule.id}')">Cancel</button>
+          <div id="${rule.id}-validation-info" class="validation-info" style="display:none;"></div>
+          <div id="${rule.id}-progress-summary" class="progress-summary"></div>
+        </div>
+      `;
+      
+      // Add elements to container
+      ruleElement.appendChild(headerElement);
+      ruleElement.appendChild(contentElement);
+      document.getElementById('rulesContainer').appendChild(ruleElement);
+      
+      // Initialize source fields based on method
+      if (rule.method) {
+        console.log(`Initializing source fields for rule ${rule.id} with method ${rule.method}`);
+        updateIngestMethod(document.getElementById(`${rule.id}-method`), rule.id);
+      }
+    }
+    
+    // Update ingest method for a rule
+    function updateIngestMethod(select, ruleId) {
+      const method = select.value;
+      const sourceFields = document.getElementById(`${ruleId}-source-fields`);
+      
+      // Update rule title with method
+      updateMethodInTitle(ruleId, method);
+      
+      if (!method) {
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <p>Please select an ingest method in the General tab first.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Get the COMPLETE current rule data from our global object - this is key
+      const rule = currentRules[ruleId] || {};
+      console.log(`Updating ingest method for rule ${ruleId}, method: ${method}`);
+      console.log(`Current rule data:`, JSON.stringify(rule));
+      
+      // Update method in the rule object
+      rule.method = method;
+      
+      // Ensure source object exists
+      if (!rule.source) {
+        rule.source = {};
+      }
+      
+      // Set source fields based on method
+      if (method === 'email') {
+        // Log the email search and attachment pattern values for debugging
+        console.log(`Email search: ${rule.source.emailSearch}, Attachment pattern: ${rule.source.attachmentPattern}`);
+        
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <label>Email Search:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-email-search" value="${rule.source.emailSearch || ''}" 
+                   placeholder="Gmail search query" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">e.g., subject:(Monthly Report) from:example.com</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Attachment Pattern:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-email-pattern" value="${rule.source.attachmentPattern || ''}" 
+                   placeholder="Regular expression pattern" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">e.g., Monthly_Report_.*\\.csv</div>
+          </div>
+        `;
+        
+        // Double-check that the fields got populated with the correct values
+        setTimeout(() => {
+          const emailSearchField = document.getElementById(`${ruleId}-email-search`);
+          const attachmentPatternField = document.getElementById(`${ruleId}-email-pattern`);
+          
+          console.log(`After DOM update, fields have values:`, {
+            emailSearch: emailSearchField ? emailSearchField.value : 'field not found',
+            attachmentPattern: attachmentPatternField ? attachmentPatternField.value : 'field not found'
+          });
+        }, 100);
+        
+      } else if (method === 'gSheet') {
+        // Log the sheet URL and tab name values for debugging
+        console.log(`Sheet URL: ${rule.source.sheetUrl}, Tab name: ${rule.source.tabName}`);
+        
+        sourceFields.innerHTML = `
+          <div class="form-row">
+            <label>Source Sheet URL:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-gsheet-url" value="${rule.source.sheetUrl || ''}" 
+                   placeholder="https://docs.google.com/spreadsheets/d/..." onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">Full Google Sheets URL of source</div>
+          </div>
+          
+          <div class="form-row">
+            <label>Source Tab:<span class="required">*</span></label>
+            <input type="text" id="${ruleId}-gsheet-tab" value="${rule.source.tabName || ''}" 
+                   placeholder="Tab name" onchange="updateRuleData('${ruleId}')">
+            <div class="help-text">Name of the tab to read from</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Update rule data when form fields change
+    function updateRuleData(ruleId) {
+      if (!currentRules[ruleId]) {
+        currentRules[ruleId] = {};
+      }
+      
+      const rule = currentRules[ruleId];
+      rule.source = rule.source || {};
+      rule.destination = rule.destination || {};
+      
+      // Update based on method
+      if (rule.method === 'email') {
+        rule.source.emailSearch = document.getElementById(`${ruleId}-email-search`).value;
+        rule.source.attachmentPattern = document.getElementById(`${ruleId}-email-pattern`).value;
+      } else if (rule.method === 'gSheet') {
+        rule.source.sheetUrl = document.getElementById(`${ruleId}-gsheet-url`).value;
+        rule.source.tabName = document.getElementById(`${ruleId}-gsheet-tab`).value;
+      }
+      
+      // Update destination fields
+      rule.destination.tabName = document.getElementById(`${ruleId}-dest-tab`).value;
+      rule.destination.handlingMode = document.getElementById(`${ruleId}-sheet-handling`).value;
+      
+      // Update the header with source info
+      updateHeaderSourceInfo(ruleId, rule);
+      
+      // Save to server immediately
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (!result.success) {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert("Error saving rule data: " + error, true);
+        })
+        .saveRule(rule);
+    }
+    
+    // Update the header source info display
+    function updateHeaderSourceInfo(ruleId, rule) {
+      const header = document.querySelector(`#${ruleId} .rule-info`);
+      if (!header) return;
+      
+      // Remove existing source info
+      const existingInfo = header.querySelector('div:nth-child(3)');
+      if (existingInfo) {
+        existingInfo.remove();
+      }
+      
+      // Create new source info
+      let sourceInfoHTML = '';
+      if (rule.method === 'email' && rule.source && rule.source.emailSearch) {
+        sourceInfoHTML = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">${rule.source.emailSearch}</div>`;
+      } else if (rule.method === 'gSheet' && rule.source && rule.source.tabName) {
+        sourceInfoHTML = `<div style="font-size:9px; margin-top:2px; color:#5f6368;">Source: ${rule.source.tabName}</div>`;
+      }
+      
+      if (sourceInfoHTML) {
+        const sourceDiv = document.createElement('div');
+        sourceDiv.innerHTML = sourceInfoHTML;
+        header.appendChild(sourceDiv.firstChild);
+      }
+    }
+    
+    // Update rule title when description changes
+    function updateRuleTitle(input, ruleId) {
+      const title = document.querySelector(`#${ruleId} .rule-title`);
+      const methodSelect = document.getElementById(`${ruleId}-method`);
+      const method = methodSelect.value;
+      
+      let methodDisplay = '';
+      if (method === 'email') methodDisplay = ' (Email)';
+      else if (method === 'gSheet') methodDisplay = ' (Google Sheet)';
+      
+      title.textContent = (input.value || "New Data Source") + methodDisplay;
+      
+      // Update stored rule data
+      if (currentRules[ruleId]) {
+        currentRules[ruleId].description = input.value;
+      }
+    }
+    
+    // Update method in rule title
+    function updateMethodInTitle(ruleId, method) {
+      const title = document.querySelector(`#${ruleId} .rule-title`);
+      const descInput = document.getElementById(`${ruleId}-description`);
+      const desc = descInput.value || "New Data Source";
+      
+      let methodDisplay = '';
+      if (method === 'email') methodDisplay = ' (Email)';
+      else if (method === 'gSheet') methodDisplay = ' (Google Sheet)';
+      
+      title.textContent = desc + methodDisplay;
+    }
+    
+    // Collect rule data from form
+    function collectRuleData(ruleId) {
+      const rule = {
+        id: ruleId,
+        active: document.getElementById(`${ruleId}-active`).checked,
+        description: document.getElementById(`${ruleId}-description`).value,
+        method: document.getElementById(`${ruleId}-method`).value,
+        source: {},
+        destination: {}
+      };
+      
+      // Collect method-specific source fields
+      if (rule.method === 'email') {
+        rule.source.emailSearch = document.getElementById(`${ruleId}-email-search`).value;
+        rule.source.attachmentPattern = document.getElementById(`${ruleId}-email-pattern`).value;
+      } else if (rule.method === 'gSheet') {
+        rule.source.sheetUrl = document.getElementById(`${ruleId}-gsheet-url`).value;
+        rule.source.tabName = document.getElementById(`${ruleId}-gsheet-tab`).value;
+      }
+      
+      // Collect destination fields
+      rule.destination.tabName = document.getElementById(`${ruleId}-dest-tab`).value;
+      rule.destination.handlingMode = document.getElementById(`${ruleId}-sheet-handling`).value;
+      
+      return rule;
+    }
+    
+    // Validate rule data
+    function validateRuleForm(rule) {
+      // Basic validation
+      if (!rule.description) {
+        showAlert("Description is required", true);
+        return false;
+      }
+      
+      if (!rule.method) {
+        showAlert("Ingest method is required", true);
+        return false;
+      }
+      
+      // Method-specific validation
+      if (rule.method === 'email') {
+        if (!rule.source.emailSearch) {
+          showAlert("Email search query is required", true);
+          return false;
+        }
+        if (!rule.source.attachmentPattern) {
+          showAlert("Attachment pattern is required", true);
+          return false;
+        }
+      } else if (rule.method === 'gSheet') {
+        if (!rule.source.sheetUrl) {
+          showAlert("Source sheet URL is required", true);
+          return false;
+        }
+        if (!rule.source.tabName) {
+          showAlert("Source tab name is required", true);
+          return false;
+        }
+      }
+      
+      // Destination validation
+      if (!rule.destination.tabName) {
+        showAlert("Destination tab name is required", true);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Save rule
+    function saveRule(ruleId) {
+      // Collect rule data
+      const rule = collectRuleData(ruleId);
+      
+      // Validate rule data
+      if (!validateRuleForm(rule)) {
+        return false;
+      }
+      
+      // Show spinner
+      showButtonSpinner(`${ruleId}-save`);
+      
+      // Save to server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-save`);
+          
+          if (result.success) {
+            showAlert(result.message);
+            
+            // Update stored rule data
+            if (result.rule) {
+              currentRules[ruleId] = result.rule;
+            }
+            
+            // Close accordion after a delay
+            setTimeout(function() {
+              const header = document.querySelector(`#${ruleId} .accordion-header`);
+              toggleAccordion(header);
+            }, 500);
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-save`);
+          showAlert("Error saving rule: " + error, true);
+        })
+        .saveRule(rule);
+    }
+    
+    // Run a specific rule
+    function runRule(ruleId) {
+      const rule = currentRules[ruleId];
+      if (!rule) {
+        showAlert("Rule not found", true);
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to run "${rule.description}"?`)) {
+        return;
+      }
+      
+      // Show spinner and disable the run button
+      showButtonSpinner(`${ruleId}-run`);
+      
+      // Reset the progress UI
+      document.getElementById(`${ruleId}-progress-bar`).style.width = '0%';
+      document.getElementById(`${ruleId}-progress-status`).textContent = 'Preparing...';
+      document.getElementById(`${ruleId}-progress-summary`).style.display = 'none';
+      document.getElementById(`${ruleId}-progress-summary`).innerHTML = '';
+      
+      // Show the progress container
+      document.getElementById(`${ruleId}-progress-container`).style.display = 'block';
+      
+      // Run on server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-run`);
+          
+          if (result.success) {
+            // If the result includes a processing ID, start monitoring progress
+            if (result.processingId) {
+              // Store the active process info
+              activeProcesses[ruleId] = {
+                processingId: result.processingId,
+                startTime: new Date(),
+                status: 'running'
+              };
+              
+              // Start monitoring progress
+              monitorProgress(ruleId, result.processingId);
+          } else {
+              // No processing ID, just show success
+              showAlert(result.message);
+              
+              // Hide progress container
+              document.getElementById(`${ruleId}-progress-container`).style.display = 'none';
+              
+              // Refresh rule to show updated status
+              refreshRules();
+            }
+          } else {
+            // Handle error
+            showAlert(result.message, true);
+            
+            // Show error in progress container
+            document.getElementById(`${ruleId}-progress-bar`).style.width = '100%';
+            document.getElementById(`${ruleId}-progress-bar`).style.backgroundColor = '#ea4335';
+            document.getElementById(`${ruleId}-progress-status`).textContent = `Error: ${result.message}`;
+            
+            // Refresh rule to show updated status after a delay
+            setTimeout(function() {
+              refreshRules();
+            }, 3000);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner(`${ruleId}-run`);
+          
+          // Show error message
+          showAlert("Error running rule: " + error, true);
+          
+          // Show error in progress container
+          document.getElementById(`${ruleId}-progress-bar`).style.width = '100%';
+          document.getElementById(`${ruleId}-progress-bar`).style.backgroundColor = '#ea4335';
+          document.getElementById(`${ruleId}-progress-status`).textContent = `Error: ${error}`;
+          
+          // Hide progress container after delay
+          setTimeout(function() {
+            document.getElementById(`${ruleId}-progress-container`).style.display = 'none';
+            
+            // Refresh rule to show updated status
+            refreshRules();
+          }, 3000);
+        })
+        .runSelectedRules([ruleId]);
+    }
+    
+    /**
+     * Monitor the progress of a rule processing job
+     * @param {string} ruleId - The ID of the rule being processed
+     * @param {string} processingId - The ID of the processing job
+     */
+    function monitorProgress(ruleId, processingId) {
+      // Disable run button during monitoring
+      document.getElementById(`${ruleId}-run`).disabled = true;
+      
+      // Set initial progress text
+      document.getElementById(`${ruleId}-progress-status`).textContent = 'Starting process...';
+      
+      console.log(`Starting to monitor process ${processingId} for rule ${ruleId}`);
+      
+      // Store both IDs in activeProcesses for proper reference
+      activeProcesses[processingId] = {
+        intervalId: setInterval(() => {
+          console.log(`Polling for process: ${processingId}`);
+          
+          google.script.run
+            .withSuccessHandler(result => {
+              console.log('Process update received:', result);
+              
+              // Update progress bar width
+              document.getElementById(`${ruleId}-progress-bar`).style.width = `${result.progress}%`;
+              
+              // Update status text directly
+              document.getElementById(`${ruleId}-progress-status`).textContent = result.status || 'Processing...';
+              
+              // Check if process is complete (100%)
+              if (result.progress >= 100) {
+                console.log('Process complete:', result);
+                clearInterval(activeProcesses[processingId].intervalId);
+                delete activeProcesses[processingId];
+                
+                // Enable run button
+                document.getElementById(`${ruleId}-run`).disabled = false;
+                
+                // Set appropriate color based on status message
+                let progressBarColor = '#4CAF50'; // Green for success
+                
+                if (result.status.includes('Error')) {
+                  progressBarColor = '#F44336'; // Red for error
+                } else if (result.status.includes('cancelled')) {
+                  progressBarColor = '#FF9800'; // Orange for cancellations
+                } else if (result.status.includes('WARNING')) {
+                  progressBarColor = '#FFC107'; // Yellow for warnings
+                }
+                
+                document.getElementById(`${ruleId}-progress-bar`).style.backgroundColor = progressBarColor;
+                
+                // Display validation info in summary
+                let summary = result.status;
+                const rowValidationMatch = result.status.match(/Row validation: (SUCCESS|WARNING) \((\d+)\/(\d+)\)/);
+                
+                if (rowValidationMatch) {
+                  const validationStatus = rowValidationMatch[1];
+                  const finalCount = rowValidationMatch[2];
+                  const expectedCount = rowValidationMatch[3];
+                  
+                  let validationHTML = '';
+                  if (validationStatus === 'SUCCESS') {
+                    validationHTML = `<div class="validation-success">✓ Row count verified: ${finalCount} rows</div>`;
+                  } else {
+                    validationHTML = `<div class="validation-warning">⚠ Row count mismatch: ${finalCount}/${expectedCount} rows</div>`;
+                  }
+                  
+                  // Check if validation-info element exists, create if it doesn't
+                  let validationInfo = document.getElementById(`${ruleId}-validation-info`);
+                  if (!validationInfo) {
+                    validationInfo = document.createElement('div');
+                    validationInfo.id = `${ruleId}-validation-info`;
+                    validationInfo.className = 'validation-info';
+                    document.getElementById(`${ruleId}-progress-container`).appendChild(validationInfo);
+                  }
+                  
+                  validationInfo.innerHTML = validationHTML;
+                  validationInfo.style.display = 'block';
+                }
+                
+                // Add a slight delay and then refresh the rule list
+                setTimeout(() => {
+                  loadRules();
+                }, 3000);
+              }
+            })
+            .withFailureHandler(error => {
+              console.error('Error monitoring progress:', error);
+              document.getElementById(`${ruleId}-progress-status`).textContent = 'Error monitoring progress: ' + error;
+              
+              clearInterval(activeProcesses[processingId].intervalId);
+              delete activeProcesses[processingId];
+              document.getElementById(`${ruleId}-run`).disabled = false;
+            })
+            .getProcessingProgress(processingId);
+        }, 1000), // Check every second
+        ruleId: ruleId
+      };
+    }
+    
+    /**
+     * Cancel a rule processing job
+     * @param {string} ruleId - The ID of the rule to cancel
+     */
+    function cancelRuleProcessing(ruleId) {
+      if (!activeProcesses[ruleId]) {
+        showAlert('No active process to cancel', true);
+        return;
+      }
+      
+      if (!confirm('Are you sure you want to cancel this process? Partial data may have been imported.')) {
+        return;
+      }
+      
+      const processingId = activeProcesses[ruleId].processingId;
+      
+      // Update status
+      document.getElementById(`${ruleId}-progress-status`).textContent = 'Cancelling...';
+      
+      // Call server to cancel process
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showAlert('Process cancellation requested. Finalizing...');
+            
+            // Update process status
+            activeProcesses[ruleId].status = 'cancelling';
+            
+            // The progress monitoring will handle the rest
+          } else {
+            showAlert(`Error cancelling process: ${result.message}`, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert(`Error cancelling process: ${error}`, true);
+        })
+        .cancelProcessingJob(processingId);
+    }
+    
+    // Delete rule
+    function deleteRule(ruleId) {
+      if (confirm("Are you sure you want to delete this data source?")) {
+        // Show spinner
+        showButtonSpinner(`${ruleId}-delete`);
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            // Hide spinner
+            hideButtonSpinner(`${ruleId}-delete`);
+            
+            if (result.success) {
+              showAlert(result.message);
+              
+              // Remove rule element
+              document.getElementById(ruleId).remove();
+              
+              // Remove from stored rules
+              delete currentRules[ruleId];
+              
+              // Update empty state
+              updateEmptyState();
+            } else {
+              showAlert(result.message, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+            // Hide spinner
+            hideButtonSpinner(`${ruleId}-delete`);
+            showAlert("Error deleting rule: " + error, true);
+          })
+          .deleteRule(ruleId);
+      }
+    }
+    
+    // Run selected rules
+    function runSelected() {
+      // Get all rule IDs
+      const ruleIds = Object.keys(currentRules);
+      
+      if (ruleIds.length === 0) {
+        showAlert("No rules to run", true);
+        return;
+      }
+      
+      // Show confirmation
+      if (!confirm(`Are you sure you want to run ${ruleIds.length} rule(s)?`)) {
+        return;
+      }
+      
+      // Show spinner
+      showButtonSpinner('runSelectedBtn');
+      
+      // Run on server
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner('runSelectedBtn');
+          
+          if (result.success) {
+            showAlert(result.message);
+            
+            // Refresh rules to show updated status
+            refreshRules();
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner('runSelectedBtn');
+          showAlert("Error running rules: " + error, true);
+        })
+        .runSelectedRules(ruleIds);
+    }
+    
+    // Refresh rules from server
+    function refreshRules() {
+      google.script.run
+        .withSuccessHandler(function(rules) {
+          if (rules && rules.length > 0) {
+            // Clear current rules
+            document.getElementById('rulesContainer').innerHTML = '';
+            currentRules = {};
+            
+            // Recreate rules
+            rules.forEach(rule => {
+              createRuleElement(rule);
+              currentRules[rule.id] = rule;
+            });
+          }
+          
+          // Update empty state
+          updateEmptyState();
+        })
+        .getAllRules();
+    }
+    
+    // Update empty state visibility
+    function updateEmptyState() {
+      const ruleCount = document.querySelectorAll('.accordion-item').length;
+      const emptyState = document.getElementById('emptyState');
+      const actionBarContainer = document.getElementById('actionBarContainer');
+      
+      if (ruleCount > 0) {
+        // Hide empty state and show action bar when rules exist
+        if (emptyState) emptyState.style.display = 'none';
+        if (actionBarContainer) actionBarContainer.style.display = 'block';
+      } else {
+        // Show empty state and hide action bar when no rules
+        if (emptyState) emptyState.style.display = 'block';
+        if (actionBarContainer) actionBarContainer.style.display = 'none';
+      }
+    }
+    
+    // Populate log sessions
+    function populateLogSessions(logs) {
+      const container = document.getElementById('logSessionsContainer');
+      if (!container) return;
+      
+      // Clear existing logs
+      container.innerHTML = '';
+      
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>No logs available.</p>
+            <p>Run a data source to generate logs.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Add each log session card
+      logs.forEach(session => {
+        // Determine status color for progress bar
+        let progressClass = '';
+        if (session.status === 'ERROR') {
+          progressClass = 'progress-error';
+        } else if (session.status === 'COMPLETE WITH WARNINGS') {
+          progressClass = 'progress-warning';
+        } else if (session.status === 'COMPLETE') {
+          progressClass = 'progress-complete';
+        }
+        
+        // Format duration
+        const durationText = formatDuration(session.duration);
+        
+        // Create card element
+        const card = document.createElement('div');
+        card.className = 'log-card';
+        card.setAttribute('data-session-id', session.sessionId);
+        
+        // Create card content
+        card.innerHTML = `
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">${session.description}</h3>
+              <div class="card-time">${new Date(session.timestamp).toLocaleString()}</div>
+              <div class="session-id">ID: ${session.sessionId}</div>
+          </div>
+          </div>
+          <div class="card-body">
+            <div class="status-summary">
+              <div class="status-item">
+                <div class="status-count status-success">${session.counts.SUCCESS}</div>
+                <div class="status-label">SUCCESS</div>
+              </div>
+              <div class="status-item">
+                <div class="status-count status-error">${session.counts.ERROR}</div>
+                <div class="status-label">ERROR</div>
+              </div>
+              <div class="status-item">
+                <div class="status-count status-warning">${session.counts.WARNING}</div>
+                <div class="status-label">WARNING</div>
+              </div>
+              <div class="status-item">
+                <div class="status-count status-info">${session.counts.INFO}</div>
+                <div class="status-label">INFO</div>
+              </div>
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar ${progressClass}" style="width: ${session.progress}%"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+              <div>Duration: ${durationText}${session.status === 'IN PROGRESS' ? ' (running)' : ''}</div>
+              <div>Status: ${session.status}${session.status === 'IN PROGRESS' ? ` (${session.progress}%)` : ''}</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-sm btn-secondary detail-btn">
+              <i class="bi bi-eye btn-icon"></i>Details
+            </button>
+            <button class="btn btn-sm btn-primary export-btn" ${session.status === 'IN PROGRESS' ? 'disabled' : ''}>
+              <i class="bi bi-file-earmark-spreadsheet btn-icon"></i>Export
+            </button>
+          </div>
+        `;
+        
+        // Add to container
+        container.appendChild(card);
+      });
+      
+      // Add event listeners to export buttons
+      document.querySelectorAll('.export-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          if (this.disabled) return;
+          
+          const card = this.closest('.log-card');
+          const sessionId = card.getAttribute('data-session-id');
+          
+          // Show spinner during export
+          this.innerHTML = '<i class="bi bi-arrow-repeat spinning btn-icon"></i>Exporting...';
+          this.disabled = true;
+          
+          // Call server-side function to export
+          google.script.run
+            .withSuccessHandler(function(result) {
+              // Update button when complete
+              button.innerHTML = '<i class="bi bi-file-earmark-spreadsheet btn-icon"></i>Export';
+              button.disabled = false;
+              
+              if (result.success) {
+                // Show success message
+                showToast(`Log exported to sheet "${result.sheetName}"`);
+              } else {
+                // Show error message
+                showToast(`Export failed: ${result.message}`, true);
+              }
+            })
+            .withFailureHandler(function(error) {
+              // Update button when failed
+              button.innerHTML = '<i class="bi bi-file-earmark-spreadsheet btn-icon"></i>Export';
+              button.disabled = false;
+              
+              // Show error message
+              showToast(`Error: ${error}`, true);
+            })
+            .exportLogSessionToSheet(sessionId);
+        });
+      });
+      
+      // Add event listeners to detail buttons
+      document.querySelectorAll('.detail-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const card = this.closest('.log-card');
+          const sessionId = card.getAttribute('data-session-id');
+          
+          // Show details for this session
+          showLogDetails(sessionId);
+        });
+      });
+    }
+    
+    /**
+     * Format duration in milliseconds to a readable string
+     */
+    function formatDuration(durationMs) {
+      const seconds = Math.floor(durationMs / 1000);
+      
+      if (seconds < 60) {
+        return `${seconds}s`;
+      }
+      
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      
+      if (minutes < 60) {
+        return `${minutes}m ${remainingSeconds}s`;
+      }
+      
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      
+      return `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+    }
+    
+    /**
+     * Shows a modal with detailed log information
+     */
+    function showLogDetails(sessionId) {
+      showSpinner('Loading log details...');
+      
+      google.script.run
+        .withSuccessHandler(function(logs) {
+          hideSpinner();
+          
+          // Find the specific session
+          if (!logs || logs.length === 0) {
+            showMessage('No logs found', 'error');
+            return;
+          }
+          
+          const session = logs.find(s => s.sessionId === sessionId);
+          if (!session) {
+            showMessage('Session not found', 'error');
+            return;
+          }
+          
+          // Create a modal to display the detailed logs
+          const modalContent = document.createElement('div');
+          
+          // Find session description
+          let sessionDescription = 'Session details';
+          if (session.events && session.events.length > 0) {
+            const startEvent = session.events.find(event => event.type === 'START');
+            if (startEvent) {
+              sessionDescription = startEvent.message;
+            }
+          }
+          
+          // Sort events by timestamp
+          const sortedEvents = [...session.events].sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+          );
+          
+          // Create event list HTML
+          const eventsHtml = sortedEvents.map(event => {
+            let typeClass = 'info';
+            switch (event.type) {
+              case 'ERROR': typeClass = 'error'; break;
+              case 'WARNING': typeClass = 'warning'; break;
+              case 'SUCCESS':
+              case 'COMPLETE': typeClass = 'success'; break;
+            }
+        
+        return `
+              <div class="log-event log-${typeClass}">
+                <div class="log-event-time">${formatDate(event.timestamp)}</div>
+                <div class="log-event-type">${event.type}</div>
+                <div class="log-event-message">${event.message}</div>
+          </div>
+        `;
+      }).join('');
+          
+          modalContent.innerHTML = `
+            <div class="modal-header">
+              <h3>${sessionDescription}</h3>
+              <div class="session-time">Started: ${formatDate(session.timestamp)}</div>
+              <div class="session-id">ID: ${session.sessionId}</div>
+            </div>
+            <div class="modal-body">
+              <div class="log-events-container">
+                ${eventsHtml}
+              </div>
+            </div>
+          `;
+          
+          showModalDialog('Log Details', modalContent, true);
+        })
+        .withFailureHandler(function(error) {
+          hideSpinner();
+          showMessage(`Error loading logs: ${error}`, 'error');
+        })
+        .getLogs();
+    }
+    
+    /**
+     * Shows a toast notification
+     */
+    function showToast(message, isError = false) {
+      const toastContainer = document.getElementById('toastContainer');
+      if (!toastContainer) {
+        // Create toast container if it doesn't exist
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '1000';
+        document.body.appendChild(container);
+      }
+      
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = `toast ${isError ? 'toast-error' : 'toast-success'}`;
+      toast.innerHTML = message;
+      
+      // Add to container
+      toastContainer.appendChild(toast);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('toast-hiding');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 500);
+      }, 3000);
+    }
+    
+    // Filter logs by text
+    function filterLogs(query) {
+      query = query.toLowerCase();
+      const logEntries = document.querySelectorAll('.log-entry');
+      
+      logEntries.forEach(entry => {
+        const text = entry.textContent.toLowerCase();
+        if (query === '' || text.includes(query)) {
+          entry.style.display = 'block';
+        } else {
+          entry.style.display = 'none';
+        }
+      });
+      
+      // Also show/hide empty session headers
+      document.querySelectorAll('.session-content').forEach(session => {
+        const visibleEntries = Array.from(session.querySelectorAll('.log-entry'))
+          .filter(entry => entry.style.display !== 'none');
+        
+        const sessionHeader = session.previousElementSibling;
+        if (visibleEntries.length === 0 && query !== '') {
+          sessionHeader.style.display = 'none';
+        } else {
+          sessionHeader.style.display = 'flex';
+        }
+      });
+    }
+    
+    // Clear all logs
+    function clearLogs() {
+      if (!confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
+        return;
+      }
+      
+      showSpinner('Clearing all logs...');
+      
+      // Call server-side function to clear logs
+        google.script.run
+        .withSuccessHandler(function(result) {
+          hideSpinner();
+          
+          if (result.success) {
+            // Show success message
+            showToast('All logs cleared successfully');
+            
+            // Refresh logs to show empty state
+            refreshLogs();
+            } else {
+            // Show error message
+            showToast(`Failed to clear logs: ${result.message}`, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+          hideSpinner();
+          
+          // Show error message
+          showToast(`Error clearing logs: ${error}`, true);
+          })
+          .clearAllLogs();
+    }
+    
+    // Set up the schedule UI based on saved settings
+    function setupScheduleUI(schedule) {
+      // Set frequency
+      document.getElementById('scheduleFrequency').value = schedule.frequency || 'manual';
+      
+      // Handle specific frequency options
+      switch (schedule.frequency) {
+        case 'one-time':
+          if (schedule.date) {
+            document.getElementById('scheduleDate').value = schedule.date;
+          }
+          if (schedule.time) {
+            document.getElementById('scheduleOneTime').value = schedule.time;
+          }
+          break;
+          
+        case 'daily':
+          if (schedule.time) {
+            document.getElementById('scheduleTime').value = schedule.time;
+          }
+          break;
+          
+        case 'weekly':
+          if (schedule.dayOfWeek) {
+            document.getElementById('scheduleDayOfWeek').value = schedule.dayOfWeek;
+          }
+          if (schedule.time) {
+            document.getElementById('scheduleWeeklyTime').value = schedule.time;
+          }
+          break;
+          
+        case 'monthly':
+          if (schedule.dayOfMonth) {
+            document.getElementById('scheduleDayOfMonth').value = schedule.dayOfMonth;
+          }
+          if (schedule.time) {
+            document.getElementById('scheduleMonthlyTime').value = schedule.time;
+          }
+          break;
+      }
+      
+      // Set notification email
+      if (schedule.notificationEmail) {
+        document.getElementById('notificationEmail').value = schedule.notificationEmail;
+      }
+      
+      // Show/hide appropriate settings based on frequency
+      handleFrequencyChange(schedule.frequency);
+      
+      // Get and display current schedule status
+      getScheduleStatus();
+    }
+    
+    // Get the current schedule status
+    function getScheduleStatus() {
+      document.getElementById('scheduleStatus').innerHTML = 'Loading schedule status...';
+      
+      google.script.run
+        .withSuccessHandler(function(status) {
+          let html = '';
+          
+          if (status.active) {
+            html += '<strong>Schedule Status:</strong> <span style="color: green;">Active</span><br>';
+            html += '<strong>Next run:</strong> ' + status.nextRunTime + '<br>';
+            
+            if (status.settings && status.settings.frequency) {
+              let frequencyText = '';
+              
+              switch (status.settings.frequency) {
+                case 'one-time':
+                  frequencyText = 'One-time on ' + status.settings.date + ' at ' + status.settings.time;
+                  break;
+                case 'hourly':
+                  frequencyText = 'Hourly';
+                  break;
+                case 'daily':
+                  frequencyText = 'Daily at ' + status.settings.time;
+                  break;
+                case 'weekly':
+                  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                  const dayName = days[parseInt(status.settings.dayOfWeek)];
+                  frequencyText = 'Weekly on ' + dayName + ' at ' + status.settings.time;
+                  break;
+                case 'monthly':
+                  const dayText = status.settings.dayOfMonth === 'last' ? 'the last day' : 'day ' + status.settings.dayOfMonth;
+                  frequencyText = 'Monthly on ' + dayText + ' at ' + status.settings.time;
+                  break;
+                default:
+                  frequencyText = status.settings.frequency;
+              }
+              
+              html += '<strong>Frequency:</strong> ' + frequencyText + '<br>';
+            }
+            
+            if (status.settings && status.settings.notificationEmail) {
+              html += '<strong>Notifications:</strong> ' + status.settings.notificationEmail + '<br>';
+            }
+      } else {
+            html += '<strong>Schedule Status:</strong> <span style="color: #666;">Inactive</span><br>';
+            html += 'No active schedule. Select a frequency and save to enable scheduling.';
+          }
+          
+          document.getElementById('scheduleStatus').innerHTML = html;
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('scheduleStatus').innerHTML = 
+            '<span style="color: red;">Error getting schedule status: ' + error + '</span>';
+        })
+        .getScheduleStatus();
+    }
+    
+    // Handle frequency change in schedule
+    function handleFrequencyChange(frequency) {
+      // Hide all options first
+      document.querySelectorAll('.schedule-options').forEach(element => {
+        element.style.display = 'none';
+      });
+      
+      // Show notification options for all frequencies except manual
+      if (frequency !== 'manual') {
+        document.getElementById('notificationOptions').style.display = 'block';
+      }
+      
+      // Show specific options based on frequency
+      switch (frequency) {
+        case 'one-time':
+          document.getElementById('oneTimeOptions').style.display = 'block';
+          break;
+        case 'daily':
+          document.getElementById('dailyOptions').style.display = 'block';
+          break;
+        case 'weekly':
+          document.getElementById('weeklyOptions').style.display = 'block';
+          break;
+        case 'monthly':
+          document.getElementById('monthlyOptions').style.display = 'block';
+          break;
+      }
+    }
+    
+    // Save schedule settings
+    function saveSchedule() {
+      // Show a spinner while saving
+      showSpinner('Saving schedule...');
+      
+      // Get frequency
+      const frequency = document.getElementById('scheduleFrequency').value;
+      
+      // Create schedule settings object
+      const scheduleSettings = {
+        frequency: frequency
+      };
+      
+      // Add additional settings based on frequency
+      if (frequency === 'one-time') {
+        const date = document.getElementById('scheduleDate').value;
+        const time = document.getElementById('scheduleOneTime').value;
+        
+        if (!date || !time) {
+          hideSpinner();
+          showMessage('Please select both date and time for one-time schedule', 'error');
+          return;
+        }
+        
+        // Check if the selected date/time is in the past
+        const selectedDateTime = new Date(`${date}T${time}`);
+        const now = new Date();
+        
+        if (selectedDateTime <= now) {
+          hideSpinner();
+          showMessage('The scheduled time must be in the future', 'error');
+          return;
+        }
+        
+        scheduleSettings.date = date;
+        scheduleSettings.time = time;
+      } else if (frequency === 'daily') {
+        const time = document.getElementById('scheduleTime').value;
+        
+        if (!time) {
+          hideSpinner();
+          showMessage('Please select a time for daily schedule', 'error');
+          return;
+        }
+        
+        scheduleSettings.time = time;
+      } else if (frequency === 'weekly') {
+        const dayOfWeek = document.getElementById('scheduleDayOfWeek').value;
+        const time = document.getElementById('scheduleWeeklyTime').value;
+        
+        if (!time) {
+          hideSpinner();
+          showMessage('Please select a time for weekly schedule', 'error');
+          return;
+        }
+        
+        scheduleSettings.dayOfWeek = dayOfWeek;
+        scheduleSettings.time = time;
+      } else if (frequency === 'monthly') {
+        const dayOfMonth = document.getElementById('scheduleDayOfMonth').value;
+        const time = document.getElementById('scheduleMonthlyTime').value;
+        
+        if (!time) {
+          hideSpinner();
+          showMessage('Please select a time for monthly schedule', 'error');
+          return;
+        }
+        
+        scheduleSettings.dayOfMonth = dayOfMonth;
+        scheduleSettings.time = time;
+      }
+      
+      // Add notification email if provided
+      if (frequency !== 'manual') {
+        const notificationEmail = document.getElementById('notificationEmail').value.trim();
+        if (notificationEmail) {
+          scheduleSettings.notificationEmail = notificationEmail;
+        }
+      }
+      
+      // Call server-side function to save schedule
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideSpinner();
+          
+          if (result.success) {
+            showMessage('Schedule saved successfully', 'success');
+            // Refresh the schedule status
+            getScheduleStatus();
+          } else {
+            showMessage('Error saving schedule: ' + result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideSpinner();
+          showMessage('Error saving schedule: ' + error, 'error');
+        })
+        .saveSchedule(scheduleSettings);
+    }
+    
+    // Show spinner on button
+    function showButtonSpinner(buttonId) {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      
+      // Create spinner container and add to button
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner-container';
+      spinner.innerHTML = '<div class="spinner"></div>';
+      button.style.position = 'relative';
+      button.appendChild(spinner);
+      button.disabled = true;
+    }
+    
+    // Hide spinner from button
+    function hideButtonSpinner(buttonId) {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      
+      // Remove spinner container
+      const spinner = button.querySelector('.spinner-container');
+      if (spinner) button.removeChild(spinner);
+      button.disabled = false;
+    }
+    
+    // Show alert message
+    function showAlert(message, isError) {
+      const alertBox = document.getElementById('alertBox');
+      const alertMessage = document.getElementById('alertMessage');
+      
+      // Set message
+      alertMessage.textContent = message;
+      
+      // Set style
+      if (isError) {
+        alertBox.className = 'alert alert-error';
+      } else {
+        alertBox.className = 'alert alert-success';
+      }
+      
+      // Show the alert
+      alertBox.style.display = 'block';
+      
+      // Hide after a delay
+      setTimeout(function() {
+        alertBox.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Format date
+    function formatDate(dateString) {
+      if (!dateString) return 'Never';
+      
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+    
+    // Format time
+    function formatTime(dateString) {
+      if (!dateString) return '';
+      
+      const date = new Date(dateString);
+      return date.toLocaleTimeString();
+    }
+    
+    // Get status color based on result
+    function getStatusColor(status) {
+      switch (status) {
+        case 'SUCCESS':
+          return '#34a853'; // Green
+        case 'ERROR':
+          return '#ea4335'; // Red
+        case 'SKIPPED':
+          return '#fbbc04'; // Yellow
+        case 'NEW':
+          return '#4285f4'; // Blue
+        default:
+          return '#5f6368'; // Gray
+      }
+    }
+    
+    /**
+     * Check for active processes and display them in the UI
+     */
+    function checkForActiveProcesses() {
+      google.script.run
+        .withSuccessHandler(function(processesData) {
+          const processesList = document.getElementById('activeProcessesList');
+          if (!processesList) return;
+          
+          const activeProcessIds = Object.keys(processesData);
+          
+          // Clear old processes list and set default message
+          processesList.innerHTML = '';
+          
+          if (activeProcessIds.length === 0) {
+            processesList.innerHTML = `
+              <div class="empty-state">
+                <p>No active processes at this time.</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Update the active processes in our tracking object
+          activeProcesses = processesData;
+          
+          // Display each process
+          activeProcessIds.forEach(processId => {
+            const process = processesData[processId];
+            
+            // Check if the process is from today
+            const today = new Date().toDateString();
+            const processDate = process.startTime ? new Date(process.startTime).toDateString() : today;
+            const isFromToday = (processDate === today);
+            
+            // Skip completed processes not from today (purge old completed jobs)
+            if (process.progress >= 100 && !isFromToday) {
+              return;
+            }
+            
+            // Skip completed jobs older than 30 seconds (same-day cleanup for UI)
+            if (process.progress >= 100 && process._secondsSinceUpdate > 30) {
+              return;
+            }
+            
+            // Create progress bar color based on status
+            let progressBarColor = '#4285f4'; // Default blue
+            if (process.status) {
+              if (process.status.includes('Error')) progressBarColor = '#ea4335'; // Red for errors
+              else if (process.status.includes('Cancel')) progressBarColor = '#f29900'; // Orange for cancellations
+              else if (process.progress >= 100) progressBarColor = '#34a853'; // Green for completion
+            }
+            
+            // Format elapsed time
+            const elapsedText = process._secondsSinceUpdate ? 
+              `Updated ${formatElapsedTime(process._secondsSinceUpdate)} ago` :
+              '';
+            
+            const processElement = document.createElement('div');
+            processElement.className = 'active-process';
+            processElement.id = `process-${processId}`;
+            processElement.innerHTML = `
+              <div><strong>${process.type || 'Unknown'} Process</strong></div>
+              <div>Progress: ${process.progress}%</div>
+              <div>Status: ${process.status || 'Processing...'}</div>
+              <div class="progress-bar-outer">
+                <div class="progress-bar-inner" style="width: ${process.progress}%; background-color: ${progressBarColor}"></div>
+              </div>
+              <div style="font-size: 10px; color: #5f6368; margin-top: 4px;">${elapsedText}</div>
+              <div>
+                ${process.progress < 100 ? 
+                  `<button class="cancel-button" onclick="cancelActiveProcess('${processId}')">Cancel</button>` : 
+                  ''}
+                <button class="delete-button" onclick="deleteActiveProcess('${processId}')">Delete</button>
+              </div>
+            `;
+            
+            processesList.appendChild(processElement);
+          });
+        })
+        .withFailureHandler(function(error) {
+          console.error("Error checking for active processes:", error);
+        })
+        .getAllActiveProcesses();
+    }
+    
+    // Format elapsed time in a human-readable way
+    function formatElapsedTime(seconds) {
+      if (seconds < 60) return `${seconds}s`;
+      if (seconds < 3600) return `${Math.floor(seconds/60)}m ${seconds%60}s`;
+      return `${Math.floor(seconds/3600)}h ${Math.floor((seconds%3600)/60)}m`;
+    }
+    
+    /**
+     * Show a full-screen spinner with a message
+     * @param {string} message - The message to display
+     */
+    function showSpinner(message = 'Loading...') {
+      // Check if spinner already exists
+      let spinner = document.getElementById('global-spinner');
+      if (spinner) {
+        // Update the message
+        const messageEl = spinner.querySelector('.spinner-message');
+        if (messageEl) {
+          messageEl.textContent = message;
+        }
+        spinner.style.display = 'flex';
+        return;
+      }
+      
+      // Create new spinner
+      spinner = document.createElement('div');
+      spinner.id = 'global-spinner';
+      spinner.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;';
+      
+      spinner.innerHTML = `
+        <div style="padding:20px;background:white;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.1);text-align:center;">
+          <div class="spinner"></div>
+          <div class="spinner-message" style="margin-top:10px;">${message}</div>
+        </div>
+      `;
+      
+      document.body.appendChild(spinner);
+    }
+    
+    /**
+     * Hide the global spinner
+     */
+    function hideSpinner() {
+      const spinner = document.getElementById('global-spinner');
+      if (spinner) {
+        spinner.style.display = 'none';
+      }
+    }
+    
+    /**
+     * Show a modal dialog
+     * @param {string} title - The title of the modal
+     * @param {HTMLElement|string} content - The content of the modal
+     * @param {boolean} isLarge - If true, use a larger modal
+     */
+    function showModalDialog(title, content, isLarge = false) {
+      // Create modal container if it doesn't exist
+      let modalContainer = document.getElementById('modal-container');
+      if (!modalContainer) {
+        modalContainer = document.createElement('div');
+        modalContainer.id = 'modal-container';
+        modalContainer.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:2000;';
+        document.body.appendChild(modalContainer);
+      } else {
+        modalContainer.style.display = 'flex';
+      }
+      
+      // Create modal content
+      const modalWidth = isLarge ? '90%' : '80%';
+      const modalHeight = isLarge ? '80%' : 'auto';
+      
+      modalContainer.innerHTML = `
+        <div style="width:${modalWidth};max-width:500px;height:${modalHeight};max-height:80vh;background:white;border-radius:4px;box-shadow:0 4px 15px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;">
+          <div style="padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e0e0e0;">
+            <h3 style="margin:0;font-size:16px;">${title}</h3>
+            <button onclick="closeModal()" style="background:none;border:none;font-size:18px;cursor:pointer;">&times;</button>
+          </div>
+          <div style="padding:15px;overflow-y:auto;flex:1;" id="modal-content-container"></div>
+        </div>
+      `;
+      
+      // Add content to modal
+      const contentContainer = document.getElementById('modal-content-container');
+      if (typeof content === 'string') {
+        contentContainer.innerHTML = content;
+      } else {
+        contentContainer.innerHTML = '';
+        contentContainer.appendChild(content);
+      }
+    }
+    
+    /**
+     * Close the modal dialog
+     */
+    function closeModal() {
+      const modal = document.getElementById('modal-container');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+    
+    /**
+     * Show a message to the user
+     * @param {string} message - The message to display
+     * @param {string} type - The type of message ('error', 'success', 'info', 'warning')
+     */
+    function showMessage(message, type = 'info') {
+      // Map type to color
+      const colorMap = {
+        error: '#db4437',
+        success: '#0f9d58',
+        info: '#4285f4',
+        warning: '#f4b400'
+      };
+      
+      // Create message container
+      const messageContainer = document.createElement('div');
+      messageContainer.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 15px;
+        background-color: white;
+        color: ${colorMap[type] || colorMap.info};
+        border-left: 4px solid ${colorMap[type] || colorMap.info};
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 3000;
+        border-radius: 4px;
+        max-width: 80%;
+        word-wrap: break-word;
+      `;
+      
+      messageContainer.innerHTML = message;
+      
+      // Add to body
+      document.body.appendChild(messageContainer);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        messageContainer.style.opacity = '0';
+        messageContainer.style.transition = 'opacity 0.5s';
+        
+        setTimeout(() => {
+          if (messageContainer.parentNode) {
+            messageContainer.parentNode.removeChild(messageContainer);
+          }
+        }, 500);
+      }, 3000);
+    }
+    
+    // Cancel an active process
+    function cancelActiveProcess(processId) {
+      if (confirm('Are you sure you want to cancel this process?')) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showAlert("Process cancellation requested");
+            } else {
+              showAlert("Failed to cancel process: " + result.message, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showAlert("Error cancelling process: " + error, true);
+          })
+          .cancelProcessingJob(processId);
+      }
+    }
+    
+    // Delete an active process
+    function deleteActiveProcess(processId) {
+      if (confirm('Are you sure you want to delete this process from the list?')) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showAlert("Process deleted successfully");
+              // Remove from UI
+              const processElement = document.getElementById(`process-${processId}`);
+              if (processElement) {
+                processElement.remove();
+              }
+              // Check if we need to show empty state
+              const processesList = document.getElementById('activeProcessesList');
+              if (processesList && processesList.children.length === 0) {
+                processesList.innerHTML = `
+                  <div class="empty-state">
+                    <p>No active processes at this time.</p>
+                  </div>
+                `;
+              }
+            } else {
+              showAlert("Failed to delete process: " + result.message, true);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showAlert("Error deleting process: " + error, true);
+          })
+          .deleteProcessingJob(processId);
+      }
+    }
+    
+    // Run scheduled tasks now
+    function runScheduleNow() {
+      // Show confirmation dialog
+      if (!confirm('This will run all active data sources immediately. Proceed?')) {
+        return;
+      }
+      
+      // Show spinner
+      showButtonSpinner('runNowBtn');
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // Hide spinner
+          hideButtonSpinner('runNowBtn');
+          
+          if (result.success) {
+            if (result.result && result.result.successCount !== undefined) {
+              showAlert(`Executed all active sources: ${result.result.successCount} successful, ${result.result.errorCount} failed`);
+            } else {
+              showAlert("Executed all active sources");
+            }
+            // Refresh the logs
+            refreshLogs();
+          } else {
+            showAlert(result.message, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          // Hide spinner
+          hideButtonSpinner('runNowBtn');
+          showAlert("Error running scheduled tasks: " + error, true);
+        })
+        .runScheduleNow();
+    }
+    
+    // Refresh the schedule status
+    function refreshScheduleStatus() {
+      const statusDiv = document.getElementById('scheduleStatus');
+      if (!statusDiv) return;
+      
+      statusDiv.innerHTML = 'Refreshing schedule status...';
+      
+      google.script.run
+        .withSuccessHandler(function(status) {
+          if (status.error) {
+            statusDiv.innerHTML = `<span style="color: #ea4335;">Error: ${status.error}</span>`;
+            return;
+          }
+          
+          let html = '';
+          
+          if (status.active) {
+            html += `<strong style="color: #34a853;">Schedule Active</strong><br>`;
+            html += `Frequency: ${formatFrequency(status.settings.frequency)}<br>`;
+            
+            if (status.settings.frequency !== 'manual' && status.settings.frequency !== 'hourly') {
+              html += `Time: ${status.settings.time || 'Not set'}<br>`;
+            }
+            
+            if (status.settings.frequency === 'weekly') {
+              html += `Day: ${formatDayOfWeek(status.settings.dayOfWeek)}<br>`;
+            }
+            
+            if (status.settings.frequency === 'monthly') {
+              html += `Day: ${formatDayOfMonth(status.settings.dayOfMonth)}<br>`;
+            }
+            
+            html += `Next run: ${status.nextRunTime}<br>`;
+          } else if (status.settings.frequency === 'manual') {
+            html += `<strong>Manual Mode</strong><br>`;
+            html += `Automatic scheduling is disabled. Use the Run Now button to execute rules manually.`;
+          } else {
+            html += `<strong style="color: #ea4335;">Schedule Inactive</strong><br>`;
+            html += `Settings saved but no active trigger. Try saving the schedule again.`;
+          }
+          
+          statusDiv.innerHTML = html;
+        })
+        .withFailureHandler(function(error) {
+          statusDiv.innerHTML = `<span style="color: #ea4335;">Error refreshing status: ${error}</span>`;
+        })
+        .getScheduleStatus();
+    }
+    
+    // Format frequency for display
+    function formatFrequency(frequency) {
+      switch(frequency) {
+        case 'hourly': return 'Every hour';
+        case 'daily': return 'Daily';
+        case 'weekly': return 'Weekly';
+        case 'monthly': return 'Monthly';
+        case 'manual': return 'Manual only';
+        default: return frequency;
+      }
+    }
+    
+    // Format day of week for display
+    function formatDayOfWeek(dayOfWeek) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[dayOfWeek] || dayOfWeek;
+    }
+    
+    // Format day of month for display
+    function formatDayOfMonth(dayOfMonth) {
+      if (dayOfMonth === 'last') return 'Last day of month';
+      
+      const day = parseInt(dayOfMonth);
+      if (isNaN(day)) return dayOfMonth;
+      
+      // Add ordinal suffix
+      if (day % 10 === 1 && day !== 11) return `${day}st`;
+      if (day % 10 === 2 && day !== 12) return `${day}nd`;
+      if (day % 10 === 3 && day !== 13) return `${day}rd`;
+      return `${day}th`;
+    }
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM Content Loaded');
+      
+      // Initialize sidebar data
+      initializeSidebar();
+      
+      // Initial check for active processes
+      checkForActiveProcesses();
+      
+      // Periodically check for active processes (every 10 seconds)
+      setInterval(checkForActiveProcesses, 10000);
+    });
+    
+    // Refresh logs
+    function refreshLogs() {
+      showSpinner('Refreshing logs...');
+      
+      google.script.run
+        .withSuccessHandler(function(data) {
+          hideSpinner();
+          
+          if (data && data.logs) {
+            console.log(`Refreshed logs: ${data.logs.length} sessions found`);
+            populateLogSessions(data.logs);
+          } else {
+            console.log('No logs found during refresh');
+            
+            // Show empty state
+            const container = document.getElementById('logSessionsContainer');
+            if (container) {
+              container.innerHTML = `
+                <div class="empty-state">
+                  <p>No logs available.</p>
+                  <p>Run a data source to generate logs.</p>
+                </div>
+              `;
+            }
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideSpinner();
+          console.error('Error refreshing logs:', error);
+          showAlert('Error refreshing logs: ' + error, true);
+        })
+        .getSidebarData();
+    }
+
+    // Export all logs to a sheet
+    function exportAllLogs() {
+      showSpinner('Exporting all logs...');
+      
+      // Call server-side function to export logs
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideSpinner();
+          
+          if (result.success) {
+            // Show success message
+            showToast(`Logs exported to sheet "${result.sheetName}"`);
+          } else {
+            // Show error message
+            showToast(`Export failed: ${result.message}`, true);
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideSpinner();
+          
+          // Show error message
+          showToast(`Export failed: ${error}`, true);
+        })
+        .exportAllLogsToSheet();
+    }
+  </script>
+</body>
+</html>
