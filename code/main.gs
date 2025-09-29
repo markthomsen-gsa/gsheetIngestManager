@@ -21,6 +21,12 @@ function onOpen() {
  */
 function runAll() {
   const sessionId = generateSessionId();
+  const startTime = new Date(); // Track session start time
+
+  // Get spreadsheet information for notifications
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheetName = spreadsheet.getName();
+  const spreadsheetUrl = spreadsheet.getUrl();
 
   try {
     // Show start notification
@@ -37,6 +43,22 @@ function runAll() {
     try {
       const logsSheet = getSheet('logs');
       logsSheet.activate();
+
+      // Position user near the area where new session logs will appear
+      const lastRow = logsSheet.getLastRow();
+      if (lastRow > 1) {
+        // Set active range to a visible area near where new logs will be added
+        // Show the last few entries plus some empty rows below for context
+        const startRow = Math.max(lastRow - 5, 2); // Show last 5 entries or start from row 2
+        logsSheet.setActiveRange(logsSheet.getRange(startRow, 1, 1, 6));
+      } else {
+        // If sheet is empty except headers, position at row 2
+        logsSheet.setActiveRange(logsSheet.getRange(2, 1, 1, 6));
+      }
+
+      // Flush to ensure immediate visual positioning
+      SpreadsheetApp.flush();
+
     } catch (error) {
       // Fail silently - navigation not critical and may not work in headless mode
       console.log(`Navigation to logs failed (likely headless execution): ${error.message}`);
@@ -60,12 +82,17 @@ function runAll() {
     // Process each rule
     let successCount = 0;
     let errorCount = 0;
+    let totalRows = 0; // Track total rows processed across all rules
 
     for (const rule of rules) {
       try {
         const result = processRule(rule, sessionId);
         if (result.success) {
           successCount++;
+          // Accumulate rows from successful rule processing
+          if (result.rowsProcessed) {
+            totalRows += result.rowsProcessed;
+          }
         } else {
           errorCount++;
         }
@@ -75,21 +102,54 @@ function runAll() {
       }
     }
 
+    // Calculate execution time
+    const endTime = new Date();
+    const executionTimeMs = endTime - startTime;
+    const executionTimeSeconds = (executionTimeMs / 1000).toFixed(1);
+    const executionTime = `${executionTimeSeconds} seconds`;
+
     // Log session completion
     logSessionComplete(sessionId, successCount, errorCount);
 
+    // Determine notification type based on results
+    let notificationType;
+    let message;
+
+    if (errorCount === 0) {
+      // All rules succeeded
+      notificationType = 'success';
+      message = `✅ Session ${sessionId} completed: ${successCount}/${rules.length} rules successful`;
+    } else if (successCount === 0) {
+      // All rules failed
+      notificationType = 'error';
+      message = `❌ Session ${sessionId} failed: 0/${rules.length} rules successful`;
+    } else {
+      // Partial success
+      notificationType = 'partial';
+      message = `⚠️ Session ${sessionId} partial success: ${successCount}/${rules.length} rules successful`;
+    }
+
     // Show completion notification
-    const message = `✅ Session ${sessionId} completed: ${successCount}/${rules.length} rules successful`;
     SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Session Complete', TOAST_DURATION_MS);
 
     // Send email notification if configured
-    sendSessionNotification('success', sessionId, {
+    sendSessionNotification(notificationType, sessionId, {
       ruleCount: rules.length,
       successCount: successCount,
-      errorCount: errorCount
+      errorCount: errorCount,
+      totalRows: totalRows,
+      executionTime: executionTime,
+      spreadsheetName: spreadsheetName,
+      spreadsheetUrl: spreadsheetUrl
     });
 
   } catch (error) {
+    // Calculate execution time even for system errors
+    const endTime = new Date();
+    const executionTimeMs = endTime - startTime;
+    const executionTimeSeconds = (executionTimeMs / 1000).toFixed(1);
+    const executionTime = `${executionTimeSeconds} seconds`;
+
     // Handle system-level errors
     logEntry(sessionId, 'SYSTEM', 'ERROR', error.message);
 
@@ -100,7 +160,14 @@ function runAll() {
     );
 
     sendSessionNotification('error', sessionId, {
-      errorMessage: error.message
+      errorMessage: error.message,
+      ruleCount: 0,
+      successCount: 0,
+      errorCount: 1,
+      totalRows: 0,
+      executionTime: executionTime,
+      spreadsheetName: spreadsheetName,
+      spreadsheetUrl: spreadsheetUrl
     });
   }
 }
@@ -202,6 +269,20 @@ function navigateToLogs() {
   try {
     const sheet = getSheet('logs');
     sheet.activate();
+
+    // Position user at the most recent activity
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      // Show recent entries for context
+      const startRow = Math.max(lastRow - 10, 2); // Show last 10 entries
+      sheet.setActiveRange(sheet.getRange(startRow, 1, 1, 6));
+    } else {
+      // Position at the first data row if sheet is empty
+      sheet.setActiveRange(sheet.getRange(2, 1, 1, 6));
+    }
+
+    SpreadsheetApp.flush();
+
     SpreadsheetApp.getActiveSpreadsheet().toast(
       'Navigated to logs sheet',
       'Navigation',

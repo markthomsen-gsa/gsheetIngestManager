@@ -45,6 +45,24 @@ function logEntry(sessionId, ruleId, status, message, rowsProcessed = 0) {
       rowsProcessed
     ]);
 
+    // Auto-scroll to the latest entry for real-time monitoring
+    try {
+      const lastRow = logsSheet.getLastRow();
+      const activeSheet = SpreadsheetApp.getActiveSheet();
+
+      // Only auto-scroll if we're currently on the logs sheet
+      if (activeSheet && activeSheet.getName() === logsSheet.getName()) {
+        // Set active range to the newly added row to ensure it's visible
+        logsSheet.setActiveRange(logsSheet.getRange(lastRow, 1, 1, 6));
+
+        // Flush pending spreadsheet changes to ensure immediate visual update
+        SpreadsheetApp.flush();
+      }
+    } catch (scrollError) {
+      // Auto-scroll is nice-to-have, don't fail logging if it doesn't work
+      console.log(`Auto-scroll failed (non-critical): ${scrollError.message}`);
+    }
+
     // Also log to console for debugging
     console.log(`[${sessionId}] ${ruleId}: ${status} - ${message}`);
 

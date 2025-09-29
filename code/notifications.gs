@@ -6,11 +6,14 @@
 // Email template definitions
 const EMAIL_TEMPLATES = {
   start: {
-    subject: '[Data Ingest] Session Started - {{sessionId}}',
+    subject: '[Data Ingest] Session Started - {{spreadsheetName}} - {{sessionId}}',
     body: `Data ingest session {{sessionId}} started.
 
 Processing {{ruleCount}} active rules.
 Started at: {{timestamp}}
+
+Spreadsheet: {{spreadsheetName}}
+View spreadsheet: {{spreadsheetUrl}}
 
 This is an automated notification.`
   },
@@ -24,6 +27,9 @@ Results:
 - Total rows processed: {{totalRows}}
 - Execution time: {{executionTime}}
 - Completed at: {{timestamp}}
+
+Spreadsheet: {{spreadsheetName}}
+View spreadsheet: {{spreadsheetUrl}}
 
 This is an automated notification.`
   },
@@ -40,6 +46,9 @@ Failed at: {{timestamp}}
 
 Please check the logs sheet for detailed information.
 
+Spreadsheet: {{spreadsheetName}}
+View spreadsheet: {{spreadsheetUrl}}
+
 This is an automated notification.`
   },
 
@@ -55,6 +64,9 @@ Results:
 - Completed at: {{timestamp}}
 
 Please check the logs sheet for details on failed rules.
+
+Spreadsheet: {{spreadsheetName}}
+View spreadsheet: {{spreadsheetUrl}}
 
 This is an automated notification.`
   }
@@ -187,7 +199,9 @@ function testEmailNotifications() {
     totalRows: 15000,
     executionTime: '24.5 seconds',
     timestamp: formatTimestamp(new Date()),
-    errorMessage: 'Test error for demonstration'
+    errorMessage: 'Test error for demonstration',
+    spreadsheetName: 'Data Ingestion Control Panel',
+    spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit'
   };
 
   console.log('Testing email templates...');
