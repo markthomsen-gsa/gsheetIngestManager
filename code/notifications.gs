@@ -12,6 +12,8 @@ const EMAIL_TEMPLATES = {
 Processing {{ruleCount}} active rules.
 Started at: {{timestamp}}
 
+{{rulesScheduled}}
+
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
 View logs: {{logsSheetUrl}}
@@ -24,11 +26,13 @@ This is an automated notification.`
     subject: '[Data Ingest] Session Complete - {{successCount}}/{{ruleCount}} successful',
     body: `✅ Data ingest session {{sessionId}} completed successfully.
 
-Results:
+Summary:
 - Rules processed: {{successCount}}/{{ruleCount}}
 - Total rows processed: {{totalRows}}
 - Execution time: {{executionTime}}
 - Completed at: {{timestamp}}
+
+{{rulesExecuted}}
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
@@ -45,10 +49,13 @@ This is an automated notification.`
 Error Details:
 {{errorMessage}}
 
-Rules processed: {{successCount}}/{{ruleCount}}
-Failed at: {{timestamp}}
+Summary:
+- Rules processed: {{successCount}}/{{ruleCount}}
+- Failed at: {{timestamp}}
 
-Please check the logs sheet for detailed information.
+{{rulesExecuted}}
+
+Please check the logs sheet for detailed troubleshooting information.
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
@@ -62,12 +69,14 @@ This is an automated notification.`
     subject: '[Data Ingest] Session Partial Success - {{successCount}}/{{ruleCount}} completed',
     body: `⚠️ Data ingest session {{sessionId}} completed with partial success.
 
-Results:
+Summary:
 - Successful rules: {{successCount}}/{{ruleCount}}
 - Failed rules: {{errorCount}}
 - Total rows processed: {{totalRows}}
 - Execution time: {{executionTime}}
 - Completed at: {{timestamp}}
+
+{{rulesExecuted}}
 
 Please check the logs sheet for details on failed rules.
 
@@ -186,6 +195,120 @@ function getRulesSheetUrl() {
 }
 
 /**
+ * Format rules for session start notification
+ */
+function formatRulesForStart(rules) {
+  if (!rules || rules.length === 0) {
+    return 'No rules scheduled for execution.';
+  }
+
+  let formattedRules = 'Rules scheduled to execute:\n\n';
+
+  rules.forEach((rule, index) => {
+    formattedRules += `${index + 1}. ${rule.id} (${rule.method} method)\n`;
+
+    // Method-specific details
+    if (rule.method === 'email') {
+      formattedRules += `   Gmail Query: ${rule.sourceQuery}\n`;
+      if (rule.attachmentPattern) {
+        formattedRules += `   Attachment Pattern: ${rule.attachmentPattern}\n`;
+      }
+      formattedRules += `   Gmail Search Link: ${createGmailSearchUrl(rule.sourceQuery)}\n`;
+    } else if (rule.method === 'gSheet') {
+      formattedRules += `   Source Sheet: ${convertSheetIdToUrl(rule.sourceQuery)}\n`;
+    } else if (rule.method === 'push') {
+      formattedRules += `   Source: Current spreadsheet\n`;
+    }
+
+    formattedRules += `   Destination: ${convertSheetIdToUrl(rule.destination)}\n`;
+    if (rule.destinationTab) {
+      formattedRules += `   Sheet Tab: ${rule.destinationTab}\n`;
+    }
+    formattedRules += `   Mode: ${rule.mode}\n\n`;
+  });
+
+  return formattedRules;
+}
+
+/**
+ * Format rule execution results
+ */
+function formatRulesResults(ruleResults) {
+  if (!ruleResults || ruleResults.length === 0) {
+    return 'No rules were executed.';
+  }
+
+  const successCount = ruleResults.filter(r => r.status === 'success').length;
+  const totalCount = ruleResults.length;
+
+  let formattedResults = `Execution Results${successCount < totalCount ? ` (${successCount}/${totalCount} successful)` : ''}:\n\n`;
+
+  ruleResults.forEach((ruleResult, index) => {
+    const { rule, result, status } = ruleResult;
+    const statusIcon = status === 'success' ? '✅' : '❌';
+
+    formattedResults += `${statusIcon} ${rule.id} (${rule.method} method)\n`;
+
+    // Method-specific details
+    if (rule.method === 'email') {
+      formattedResults += `   Gmail Query: ${rule.sourceQuery}\n`;
+      formattedResults += `   Gmail Search Link: ${createGmailSearchUrl(rule.sourceQuery)}\n`;
+
+      // Email-specific details for successful processing
+      if (status === 'success' && result.senderInfo) {
+        formattedResults += `   Processed Email: "${result.senderInfo.subject}" from ${result.senderInfo.name} <${result.senderInfo.email}>\n`;
+        formattedResults += `   Email Date: ${formatTimestamp(result.senderInfo.date)}\n`;
+      }
+      if (status === 'success' && result.filename) {
+        formattedResults += `   Processed File: ${result.filename}\n`;
+      }
+    } else if (rule.method === 'gSheet') {
+      formattedResults += `   Source: ${convertSheetIdToUrl(rule.sourceQuery)}\n`;
+    } else if (rule.method === 'push') {
+      formattedResults += `   Source: Current spreadsheet → ${rule.destinationTab || 'Default'} tab\n`;
+    }
+
+    formattedResults += `   Destination: ${convertSheetIdToUrl(rule.destination)}\n`;
+    if (rule.destinationTab) {
+      formattedResults += `   Sheet Tab: ${rule.destinationTab}\n`;
+    }
+
+    if (status === 'success') {
+      formattedResults += `   Rows Processed: ${result.rowsProcessed || 0}\n`;
+    } else {
+      formattedResults += `   Error: ${result.error || 'Unknown error occurred'}\n`;
+    }
+
+    formattedResults += '\n';
+  });
+
+  return formattedResults;
+}
+
+/**
+ * Convert sheet ID to full URL (helper function)
+ */
+function convertSheetIdToUrl(sheetId) {
+  if (!sheetId) {
+    // Handle empty destination = current spreadsheet URL
+    return SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  }
+
+  // If it's already a URL, return as-is
+  if (sheetId.includes('docs.google.com/spreadsheets')) {
+    return sheetId;
+  }
+
+  // If it's a 44-character sheet ID, convert to URL
+  if (sheetId.length === 44) {
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+  }
+
+  // Fallback for unknown format
+  return sheetId;
+}
+
+/**
  * Get all unique email recipients from active rules
  */
 function getAllEmailRecipients() {
@@ -235,19 +358,68 @@ function sendRuleNotification(type, rule, sessionId, data) {
  */
 function testEmailNotifications() {
   const testRecipients = ['test@example.com']; // Update with real email for testing
+
+  // Create test rules for demonstration
+  const testRules = [
+    {
+      id: 'sales-import',
+      method: 'email',
+      sourceQuery: 'from:reports@company.com subject:"Daily Sales"',
+      attachmentPattern: 'sales-.*\\.csv$',
+      destination: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      destinationTab: 'Daily Sales Data',
+      mode: 'clearAndReuse'
+    },
+    {
+      id: 'inventory-sync',
+      method: 'gSheet',
+      sourceQuery: '1SourceSheetId123456789012345678901234567890',
+      destination: '1DestSheetId456789012345678901234567890123',
+      destinationTab: 'Inventory',
+      mode: 'append'
+    }
+  ];
+
+  // Create test rule results for completion notifications
+  const testRuleResults = [
+    {
+      rule: testRules[0],
+      result: {
+        rowsProcessed: 1250,
+        senderInfo: {
+          name: 'Reports Team',
+          email: 'reports@company.com',
+          subject: 'Daily Sales Report - 2024-01-15',
+          date: new Date('2024-01-15T08:30:00')
+        },
+        filename: 'sales-2024-01-15.csv'
+      },
+      status: 'success'
+    },
+    {
+      rule: testRules[1],
+      result: {
+        error: 'Source sheet not found or access denied'
+      },
+      status: 'error'
+    }
+  ];
+
   const testVariables = {
     sessionId: 'TEST123',
-    ruleCount: 3,
-    successCount: 2,
+    ruleCount: 2,
+    successCount: 1,
     errorCount: 1,
-    totalRows: 15000,
+    totalRows: 1250,
     executionTime: '24.5 seconds',
     timestamp: formatTimestamp(new Date()),
     errorMessage: 'Test error for demonstration',
     spreadsheetName: 'Data Ingestion Control Panel',
     spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
     logsSheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=123456789',
-    rulesSheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=987654321'
+    rulesSheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=987654321',
+    rulesScheduled: formatRulesForStart(testRules),
+    rulesExecuted: formatRulesResults(testRuleResults)
   };
 
   console.log('Testing email templates...');

@@ -33,9 +33,10 @@ function testUrlParsing() {
       shouldPass: false
     },
     {
-      name: 'Empty destination',
+      name: 'Empty destination (auto-defaults to current spreadsheet)',
       input: '',
-      shouldPass: false
+      expectedId: SpreadsheetApp.getActiveSpreadsheet().getId(),
+      shouldPass: true
     }
   ];
 
@@ -298,6 +299,109 @@ function testAppendModeWithNewTabs() {
 }
 
 /**
+ * Test missing destination column handling
+ */
+function testMissingDestinationColumn() {
+  console.log('Testing missing destination column handling...');
+
+  // Test column detection with missing destination
+  const testHeaders = [
+    {
+      name: 'Headers with destination column',
+      headers: ['Rule ID', 'Active', 'Method', 'Source Query', 'Attachment Pattern', 'Destination', 'Mode'],
+      expectDestination: 5
+    },
+    {
+      name: 'Headers without destination column',
+      headers: ['Rule ID', 'Active', 'Method', 'Source Query', 'Attachment Pattern', 'Mode'],
+      expectDestination: -1
+    },
+    {
+      name: 'Headers with reordered columns',
+      headers: ['Active', 'Rule ID', 'Destination', 'Method', 'Mode'],
+      expectDestination: 2
+    },
+    {
+      name: 'Headers with case variations',
+      headers: ['rule id', 'active', 'method', 'destination', 'mode'],
+      expectDestination: 3
+    }
+  ];
+
+  testHeaders.forEach(test => {
+    try {
+      const columnMap = detectColumnPositions(test.headers);
+
+      if (columnMap.destination === test.expectDestination) {
+        console.log(`✅ ${test.name}: PASSED - Found destination at column ${columnMap.destination}`);
+      } else {
+        console.log(`❌ ${test.name}: FAILED - Expected destination at ${test.expectDestination}, got ${columnMap.destination}`);
+      }
+    } catch (error) {
+      console.log(`❌ ${test.name}: FAILED - Error: ${error.message}`);
+    }
+  });
+
+  // Test rule parsing with missing destination
+  const testRows = [
+    {
+      name: 'Row with destination present',
+      headers: ['Rule ID', 'Active', 'Method', 'Destination', 'Mode'],
+      row: ['test-rule', true, 'email', 'some-sheet-id', 'append'],
+      expectDestination: 'some-sheet-id'
+    },
+    {
+      name: 'Row with missing destination column',
+      headers: ['Rule ID', 'Active', 'Method', 'Mode'],
+      row: ['test-rule', true, 'email', 'append'],
+      expectDestination: undefined
+    },
+    {
+      name: 'Row with empty destination',
+      headers: ['Rule ID', 'Active', 'Method', 'Destination', 'Mode'],
+      row: ['test-rule', true, 'email', '', 'append'],
+      expectDestination: ''
+    }
+  ];
+
+  testRows.forEach(test => {
+    try {
+      const columnMap = detectColumnPositions(test.headers);
+      const rule = parseRuleFromRow(test.row, columnMap);
+
+      if (rule.destination === test.expectDestination) {
+        console.log(`✅ ${test.name}: PASSED - Destination = "${rule.destination}"`);
+      } else {
+        console.log(`❌ ${test.name}: FAILED - Expected "${test.expectDestination}", got "${rule.destination}"`);
+      }
+    } catch (error) {
+      console.log(`❌ ${test.name}: FAILED - Error: ${error.message}`);
+    }
+  });
+
+  // Test parseDestination with missing destination (should default to current spreadsheet)
+  try {
+    const currentId = SpreadsheetApp.getActiveSpreadsheet().getId();
+    const resultEmpty = parseDestination('');
+    const resultUndefined = parseDestination(undefined);
+
+    if (resultEmpty === currentId) {
+      console.log(`✅ Empty destination defaults to current spreadsheet: PASSED`);
+    } else {
+      console.log(`❌ Empty destination defaults to current spreadsheet: FAILED`);
+    }
+
+    if (resultUndefined === currentId) {
+      console.log(`✅ Undefined destination defaults to current spreadsheet: PASSED`);
+    } else {
+      console.log(`❌ Undefined destination defaults to current spreadsheet: FAILED`);
+    }
+  } catch (error) {
+    console.log(`❌ Destination defaulting test: FAILED - Error: ${error.message}`);
+  }
+}
+
+/**
  * Run all tests
  */
 function runAllUrlTests() {
@@ -316,6 +420,9 @@ function runAllUrlTests() {
   console.log('');
 
   testAppendModeWithNewTabs();
+  console.log('');
+
+  testMissingDestinationColumn();
   console.log('');
 
   console.log('✨ All tests completed!');

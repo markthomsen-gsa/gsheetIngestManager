@@ -32,8 +32,9 @@ function extractSheetIdFromUrl(url) {
  * Parse destination field - handles both URLs and IDs
  */
 function parseDestination(destination) {
-  if (!destination) {
-    throw new Error('Destination is required');
+  // Auto-default to current spreadsheet if destination is empty
+  if (!destination || destination.trim() === '') {
+    return SpreadsheetApp.getActiveSpreadsheet().getId();
   }
 
   // If it looks like a URL, extract the ID
@@ -73,6 +74,71 @@ function isValidRegex(pattern) {
 }
 
 /**
+ * Detect column positions from spreadsheet headers
+ * Returns mapping of field names to column indices (-1 if not found)
+ */
+function detectColumnPositions(headers) {
+  const columnMap = {};
+
+  // Define possible header variations for each field
+  const headerPatterns = {
+    id: ['Rule ID', 'rule id', 'id'],
+    active: ['Active', 'active'],
+    method: ['Method', 'method'],
+    sourceQuery: ['Source Query', 'source query', 'query'],
+    attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
+    destination: ['Destination (URL, ID, or empty for current)', 'Destination (URL or ID)', 'Destination', 'destination'],
+    destinationTab: ['Destination Tab', 'destination tab', 'tab'],
+    mode: ['Mode', 'mode'],
+    emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails']
+  };
+
+  // Find each field's position
+  Object.keys(headerPatterns).forEach(field => {
+    columnMap[field] = -1; // Default to not found
+
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i] ? headers[i].toString().trim() : '';
+      if (headerPatterns[field].some(pattern =>
+        header.toLowerCase() === pattern.toLowerCase())) {
+        columnMap[field] = i;
+        break;
+      }
+    }
+  });
+
+  return columnMap;
+}
+
+/**
+ * Safely extract value from row using column mapping
+ */
+function getValueFromRow(row, columnMap, field) {
+  const colIndex = columnMap[field];
+  if (colIndex === -1 || colIndex >= row.length) {
+    return undefined;
+  }
+  return row[colIndex];
+}
+
+/**
+ * Parse rule from row data using dynamic column detection
+ */
+function parseRuleFromRow(row, columnMap) {
+  return {
+    id: getValueFromRow(row, columnMap, 'id'),
+    active: getValueFromRow(row, columnMap, 'active'),
+    method: getValueFromRow(row, columnMap, 'method'),
+    sourceQuery: getValueFromRow(row, columnMap, 'sourceQuery'),
+    attachmentPattern: getValueFromRow(row, columnMap, 'attachmentPattern'),
+    destination: getValueFromRow(row, columnMap, 'destination'),
+    destinationTab: getValueFromRow(row, columnMap, 'destinationTab'),
+    mode: getValueFromRow(row, columnMap, 'mode'),
+    emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients')
+  };
+}
+
+/**
  * Validate individual rule configuration
  */
 function validateRule(rule) {
@@ -83,7 +149,6 @@ function validateRule(rule) {
   if (!rule.method || !VALID_METHODS.includes(rule.method)) {
     errors.push(`Method must be one of: ${VALID_METHODS.join(', ')}`);
   }
-  if (!rule.destination) errors.push('Destination is required');
   if (!rule.mode || !VALID_MODES.includes(rule.mode)) {
     errors.push(`Mode must be one of: ${VALID_MODES.join(', ')}`);
   }
@@ -143,26 +208,17 @@ function validateAllRules() {
     }
 
     const headers = data[0];
+    const columnMap = detectColumnPositions(headers);
     const rules = data.slice(1);
 
     let allValid = true;
     const validationErrors = [];
 
     rules.forEach((row, index) => {
-      // Skip empty rows
-      if (!row[RULE_COLUMNS.ID]) return;
+      const rule = parseRuleFromRow(row, columnMap);
 
-      const rule = {
-        id: row[RULE_COLUMNS.ID],
-        active: row[RULE_COLUMNS.ACTIVE],
-        method: row[RULE_COLUMNS.METHOD],
-        sourceQuery: row[RULE_COLUMNS.SOURCE_QUERY],
-        attachmentPattern: row[RULE_COLUMNS.ATTACHMENT_PATTERN],
-        destination: row[RULE_COLUMNS.DESTINATION],
-        destinationTab: row[RULE_COLUMNS.DESTINATION_TAB],
-        mode: row[RULE_COLUMNS.MODE],
-        emailRecipients: row[RULE_COLUMNS.EMAIL_RECIPIENTS]
-      };
+      // Skip empty rows (check if rule has minimal data)
+      if (!rule.id) return;
 
       const errors = validateRule(rule);
       if (errors.length > 0) {
@@ -238,7 +294,7 @@ function createRulesSheet() {
       'Method',
       'Source Query',
       'Attachment Pattern',
-      'Destination (URL or ID)',
+      'Destination (URL, ID, or empty for current)',
       'Destination Tab',
       'Mode',
       'Email Recipients'

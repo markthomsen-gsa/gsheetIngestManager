@@ -26,6 +26,11 @@ function processEmailRule(rule, sessionId) {
       for (const message of messages) {
         const result = processCsvAttachments(message, rule, sessionId);
         if (result.rowsProcessed > 0) {
+          // Log sender information for successful processing
+          if (result.senderInfo) {
+            logEntry(sessionId, rule.id, 'INFO',
+              `Processed email from: ${result.senderInfo.name} <${result.senderInfo.email}>`);
+          }
           return result; // Return on first successful processing
         }
       }
@@ -71,7 +76,20 @@ function processCsvAttachments(message, rule, sessionId) {
   const attachment = csvAttachments[0];
   logEntry(sessionId, rule.id, 'INFO', `Processing CSV: ${attachment.getName()}`);
 
-  return processCSVWithRetry(attachment, rule, sessionId);
+  // Extract sender information from the message
+  const senderInfo = extractSenderInfo(message);
+
+  // Process CSV and add sender info to result
+  const result = processCSVWithRetry(attachment, rule, sessionId);
+
+  // Add sender info and search URL to result
+  if (result.rowsProcessed > 0) {
+    result.senderInfo = senderInfo;
+    result.gmailSearchUrl = createGmailSearchUrl(rule.sourceQuery);
+    result.filename = attachment.getName();
+  }
+
+  return result;
 }
 
 /**
@@ -303,4 +321,63 @@ function processCSVWithRetry(attachment, rule, sessionId) {
   return executeWithRetry(() => {
     return processCsvAttachment(attachment, rule, sessionId);
   }, RETRY_ATTEMPTS);
+}
+
+/**
+ * Extract sender information from Gmail message
+ */
+function extractSenderInfo(message) {
+  try {
+    const fromHeader = message.getFrom(); // Format: "Display Name <email@domain.com>" or "email@domain.com"
+
+    // Extract email address using regex
+    const emailMatch = fromHeader.match(/[^@<\s]+@[^@\s>]+/);
+    const emailAddress = emailMatch ? emailMatch[0] : '';
+
+    // Extract display name (text before < or the whole string if no < found)
+    let displayName = '';
+    if (fromHeader.includes('<')) {
+      displayName = fromHeader.split('<')[0].trim();
+      // Remove quotes if present
+      displayName = displayName.replace(/^["']|["']$/g, '');
+    } else {
+      // If no < found, assume it's just an email address
+      displayName = emailAddress;
+    }
+
+    return {
+      full: fromHeader,
+      email: emailAddress,
+      name: displayName || emailAddress,
+      subject: message.getSubject(),
+      date: message.getDate()
+    };
+
+  } catch (error) {
+    console.error('Error extracting sender info:', error.message);
+    return {
+      full: 'Unknown Sender',
+      email: 'unknown@unknown.com',
+      name: 'Unknown',
+      subject: 'Unknown Subject',
+      date: new Date()
+    };
+  }
+}
+
+/**
+ * Create clickable Gmail search URL from search query
+ */
+function createGmailSearchUrl(searchQuery) {
+  try {
+    // URL encode the search query
+    const encodedQuery = encodeURIComponent(searchQuery);
+
+    // Gmail search URL format
+    return `https://mail.google.com/mail/u/0/#search/${encodedQuery}`;
+
+  } catch (error) {
+    console.error('Error creating Gmail search URL:', error.message);
+    return 'https://mail.google.com/mail/u/0/'; // Fallback to Gmail inbox
+  }
 }

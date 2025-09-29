@@ -7,7 +7,8 @@
  * Process push rule to send data to external sheet
  */
 function processPushRule(rule, sessionId) {
-  logEntry(sessionId, rule.id, 'START', `Pushing data to: ${rule.destination}`);
+  const destDisplay = rule.destination || '(current spreadsheet)';
+  logEntry(sessionId, rule.id, 'START', `Pushing data to: ${destDisplay}`);
 
   try {
     // Get current sheet data

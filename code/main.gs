@@ -79,10 +79,21 @@ function runAll() {
       return;
     }
 
+    // Send session start notification if configured
+    sendSessionNotification('start', sessionId, {
+      ruleCount: rules.length,
+      spreadsheetName: spreadsheetName,
+      spreadsheetUrl: spreadsheetUrl,
+      logsSheetUrl: getLogsSheetUrl(),
+      rulesSheetUrl: getRulesSheetUrl(),
+      rulesScheduled: formatRulesForStart(rules)
+    });
+
     // Process each rule
     let successCount = 0;
     let errorCount = 0;
     let totalRows = 0; // Track total rows processed across all rules
+    const ruleResults = []; // Store detailed results for each rule
 
     for (const rule of rules) {
       try {
@@ -93,12 +104,29 @@ function runAll() {
           if (result.rowsProcessed) {
             totalRows += result.rowsProcessed;
           }
+
+          // Store rule result with all details
+          ruleResults.push({
+            rule: rule,
+            result: result,
+            status: 'success'
+          });
         } else {
           errorCount++;
+          ruleResults.push({
+            rule: rule,
+            result: result,
+            status: 'error'
+          });
         }
       } catch (error) {
         errorCount++;
         logEntry(sessionId, rule.id, 'ERROR', error.message);
+        ruleResults.push({
+          rule: rule,
+          result: { error: error.message },
+          status: 'error'
+        });
       }
     }
 
@@ -142,7 +170,8 @@ function runAll() {
       spreadsheetName: spreadsheetName,
       spreadsheetUrl: spreadsheetUrl,
       logsSheetUrl: getLogsSheetUrl(),
-      rulesSheetUrl: getRulesSheetUrl()
+      rulesSheetUrl: getRulesSheetUrl(),
+      rulesExecuted: formatRulesResults(ruleResults)
     });
 
   } catch (error) {
@@ -171,7 +200,8 @@ function runAll() {
       spreadsheetName: spreadsheetName,
       spreadsheetUrl: spreadsheetUrl,
       logsSheetUrl: getLogsSheetUrl(),
-      rulesSheetUrl: getRulesSheetUrl()
+      rulesSheetUrl: getRulesSheetUrl(),
+      rulesExecuted: 'System error occurred before rule processing could begin.'
     });
   }
 }
@@ -202,7 +232,15 @@ function processRule(rule, sessionId) {
     if (result.rowsProcessed > 0) {
       logEntry(sessionId, rule.id, 'SUCCESS',
         `Processed ${result.rowsProcessed} rows`);
-      return { success: true, rowsProcessed: result.rowsProcessed };
+
+      // Return all result data including email sender info and search URLs
+      return {
+        success: true,
+        rowsProcessed: result.rowsProcessed,
+        senderInfo: result.senderInfo,
+        gmailSearchUrl: result.gmailSearchUrl,
+        filename: result.filename
+      };
     } else {
       logEntry(sessionId, rule.id, 'INFO', 'No data to process');
       return { success: true, rowsProcessed: 0 };
@@ -220,23 +258,22 @@ function processRule(rule, sessionId) {
 function getActiveRules() {
   const rulesSheet = getSheet('rules');
   const data = rulesSheet.getDataRange().getValues();
+
+  if (data.length < 2) {
+    return []; // No data rows
+  }
+
   const headers = data[0];
+  const columnMap = detectColumnPositions(headers);
   const rules = [];
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row[1] === true) { // Active column
-      rules.push({
-        id: row[0],
-        active: row[1],
-        method: row[2],
-        sourceQuery: row[3],
-        attachmentPattern: row[4],
-        destination: row[5],
-        destinationTab: row[6],
-        mode: row[7],
-        emailRecipients: row[8]
-      });
+    const rule = parseRuleFromRow(row, columnMap);
+
+    // Check if rule is active (handle missing active column gracefully)
+    if (rule.active === true) {
+      rules.push(rule);
     }
   }
 
