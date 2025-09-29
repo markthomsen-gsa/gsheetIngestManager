@@ -1,0 +1,6 @@
+ignore/
+CLAUDE.md
+docs/
+.clasp.json
+.claude/
+.DS_Store
