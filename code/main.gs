@@ -33,6 +33,15 @@ function runAll() {
     // Log session start
     logSessionStart(sessionId);
 
+    // Navigate to logs sheet for real-time monitoring
+    try {
+      const logsSheet = getSheet('logs');
+      logsSheet.activate();
+    } catch (error) {
+      // Fail silently - navigation not critical and may not work in headless mode
+      console.log(`Navigation to logs failed (likely headless execution): ${error.message}`);
+    }
+
     // Validate all rules before processing
     validateAllRules();
 
@@ -153,8 +162,9 @@ function getActiveRules() {
         sourceQuery: row[3],
         attachmentPattern: row[4],
         destination: row[5],
-        mode: row[6],
-        emailRecipients: row[7]
+        destinationTab: row[6],
+        mode: row[7],
+        emailRecipients: row[8]
       });
     }
   }

@@ -12,6 +12,48 @@ function isValidSheetId(sheetId) {
 }
 
 /**
+ * Validate Google Sheets URL format
+ */
+function isValidSheetUrl(url) {
+  // Check if URL matches Google Sheets pattern
+  return /https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9_-]{44}\//.test(url);
+}
+
+/**
+ * Extract Sheet ID from Google Sheets URL
+ */
+function extractSheetIdFromUrl(url) {
+  // Match: /spreadsheets/d/[SHEET_ID]/
+  const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{44})\//);
+  return match ? match[1] : null;
+}
+
+/**
+ * Parse destination field - handles both URLs and IDs
+ */
+function parseDestination(destination) {
+  if (!destination) {
+    throw new Error('Destination is required');
+  }
+
+  // If it looks like a URL, extract the ID
+  if (destination.includes('docs.google.com/spreadsheets')) {
+    const sheetId = extractSheetIdFromUrl(destination);
+    if (!sheetId) {
+      throw new Error('Invalid Google Sheets URL format');
+    }
+    return sheetId;
+  }
+
+  // Otherwise treat as Sheet ID
+  if (!isValidSheetId(destination)) {
+    throw new Error('Invalid Sheet ID format (must be 44 characters)');
+  }
+
+  return destination;
+}
+
+/**
  * Validate email address format
  */
 function isValidEmail(email) {
@@ -66,9 +108,13 @@ function validateRule(rule) {
     }
   }
 
-  // Destination validation
-  if (rule.destination && !isValidSheetId(rule.destination)) {
-    errors.push('Invalid destination sheet ID format');
+  // Destination validation - support both URLs and IDs
+  if (rule.destination) {
+    try {
+      parseDestination(rule.destination);
+    } catch (error) {
+      errors.push(`Destination error: ${error.message}`);
+    }
   }
 
   // Email recipients validation
@@ -113,6 +159,7 @@ function validateAllRules() {
         sourceQuery: row[RULE_COLUMNS.SOURCE_QUERY],
         attachmentPattern: row[RULE_COLUMNS.ATTACHMENT_PATTERN],
         destination: row[RULE_COLUMNS.DESTINATION],
+        destinationTab: row[RULE_COLUMNS.DESTINATION_TAB],
         mode: row[RULE_COLUMNS.MODE],
         emailRecipients: row[RULE_COLUMNS.EMAIL_RECIPIENTS]
       };
@@ -191,7 +238,8 @@ function createRulesSheet() {
       'Method',
       'Source Query',
       'Attachment Pattern',
-      'Destination Sheet ID',
+      'Destination (URL or ID)',
+      'Destination Tab',
       'Mode',
       'Email Recipients'
     ];
@@ -210,7 +258,8 @@ function createRulesSheet() {
       'email',
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
-      'YOUR_SHEET_ID_HERE',
+      'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit',
+      'Data Import',
       'clearAndReuse',
       'admin@company.com'
     ];
@@ -261,6 +310,42 @@ function getSpreadsheetById(sheetId) {
   } catch (error) {
     throw new Error(`Cannot access sheet with ID: ${sheetId}. Check permissions and ID format.`);
   }
+}
+
+/**
+ * Get existing sheet or create new one if it doesn't exist
+ */
+function getOrCreateSheet(spreadsheet, tabName, sessionId = null, ruleId = null) {
+  // If no specific tab requested, use first sheet
+  if (!tabName || !tabName.trim()) {
+    const sheets = spreadsheet.getSheets();
+    if (sheets.length === 0) {
+      // Edge case: spreadsheet has no sheets, create default one
+      const newSheet = spreadsheet.insertSheet('Sheet1');
+      if (sessionId && ruleId) {
+        logEntry(sessionId, ruleId, 'INFO', 'Created default tab: Sheet1');
+      }
+      console.log('Created default tab: Sheet1');
+      return newSheet;
+    }
+    return sheets[0];
+  }
+
+  const trimmedName = tabName.trim();
+
+  // Try to find existing tab
+  let sheet = spreadsheet.getSheetByName(trimmedName);
+
+  if (!sheet) {
+    // Create the tab if it doesn't exist
+    sheet = spreadsheet.insertSheet(trimmedName);
+    if (sessionId && ruleId) {
+      logEntry(sessionId, ruleId, 'INFO', `Created new tab: ${trimmedName}`);
+    }
+    console.log(`Created new tab: ${trimmedName}`);
+  }
+
+  return sheet;
 }
 
 /**

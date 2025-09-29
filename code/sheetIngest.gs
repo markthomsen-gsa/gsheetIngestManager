@@ -23,7 +23,7 @@ function processSheetRule(rule, sessionId) {
     }
 
     // Get destination sheet
-    const destSheet = getDestinationSheet(rule);
+    const destSheet = getDestinationSheet(rule, sessionId);
 
     // Apply data to destination
     const rowsWritten = applyDataToSheet(sourceData, destSheet, rule.mode);

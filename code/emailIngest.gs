@@ -95,7 +95,7 @@ function processCsvAttachment(attachment, rule, sessionId) {
     validateCSVSize(csvData);
 
     // Get destination sheet
-    const destSheet = getDestinationSheet(rule);
+    const destSheet = getDestinationSheet(rule, sessionId);
 
     // Apply processing mode
     const rowsWritten = applyCsvToSheet(csvData, destSheet, rule.mode);
@@ -181,19 +181,17 @@ function validateCSVStructure(csvData) {
 
 /**
  * Get destination sheet with error handling
+ * Supports both URLs and IDs, and specific tab names
+ * Auto-creates tabs if they don't exist
  */
-function getDestinationSheet(rule) {
+function getDestinationSheet(rule, sessionId = null) {
   try {
-    const destSpreadsheet = SpreadsheetApp.openById(rule.destination);
+    // Parse destination to get Sheet ID (handles URLs and IDs)
+    const sheetId = parseDestination(rule.destination);
+    const destSpreadsheet = SpreadsheetApp.openById(sheetId);
 
-    // Use first sheet if no specific sheet name provided
-    const sheet = destSpreadsheet.getSheets()[0];
-
-    if (!sheet) {
-      throw new Error('Destination spreadsheet has no sheets');
-    }
-
-    return sheet;
+    // Get or create the specified tab using helper function
+    return getOrCreateSheet(destSpreadsheet, rule.destinationTab, sessionId, rule.id);
 
   } catch (error) {
     throw new Error(`Cannot access destination sheet: ${error.message}`);
@@ -243,7 +241,16 @@ function clearAndReuse(csvData, sheet) {
  */
 function appendData(csvData, sheet) {
   try {
-    // Skip header row when appending
+    const lastRow = sheet.getLastRow();
+
+    // If sheet is empty (new tab or cleared), write all data including headers
+    if (lastRow === 0) {
+      const range = sheet.getRange(1, 1, csvData.length, csvData[0].length);
+      range.setValues(csvData);
+      return csvData.length;
+    }
+
+    // Skip header row when appending to existing data
     const dataToAppend = csvData.slice(1);
 
     if (dataToAppend.length === 0) {
@@ -251,7 +258,6 @@ function appendData(csvData, sheet) {
     }
 
     // Find next empty row
-    const lastRow = sheet.getLastRow();
     const startRow = lastRow + 1;
 
     // Write data

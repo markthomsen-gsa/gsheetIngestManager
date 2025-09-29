@@ -66,9 +66,10 @@ Configure your data ingestion rules:
 | C | Method | email/gSheet/push | `email` |
 | D | Source Query | Gmail query or Sheet ID | `from:reports@company.com` |
 | E | Attachment Pattern | Regex for CSV files | `sales-.*\.csv$` |
-| F | Destination Sheet ID | Target sheet ID (44 chars) | `1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms` |
-| G | Mode | Processing mode | `clearAndReuse` |
-| H | Email Recipients | Notification emails | `admin@company.com` |
+| F | Destination | Sheet URL or ID | `https://docs.google.com/spreadsheets/d/1BxiMVs0.../edit` |
+| G | Destination Tab | Tab name (optional) | `Data Import` |
+| H | Mode | Processing mode | `clearAndReuse` |
+| I | Email Recipients | Notification emails | `admin@company.com` |
 
 #### Logs Sheet (`ingest-logs`)
 Automatically tracks all operations with session correlation.
@@ -130,6 +131,56 @@ Source Query: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
 - Deletes and recreates destination sheet
 - Ensures clean slate with new structure
 - **Use case**: Schema changes or fresh start
+
+## 🔧 Auto-Creation Behavior
+
+### Tab Auto-Creation
+The system automatically creates missing tabs in all processing modes:
+
+**New Tab Creation**:
+- **clearAndReuse**: Creates tab if missing, then clears and writes data
+- **append**: Creates empty tab if missing, writes all data including headers
+- **recreate**: Creates new tab (or recreates existing) with fresh data
+
+**Smart Append Logic**:
+- **Empty Tab**: Writes all data including headers (treats as new destination)
+- **Existing Data**: Skips header row, appends data only (standard append behavior)
+
+**Session Logging**:
+```
+[S12345678] rule-id: INFO - Created new tab: Monthly Reports
+[S12345678] rule-id: SUCCESS - Processed 1,250 rows
+```
+
+## 🎯 Destination Configuration
+
+### URL Support
+The system accepts both Google Sheets URLs and 44-character Sheet IDs:
+
+**Google Sheets URL (Recommended)**:
+```
+https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+```
+
+**Sheet ID (Legacy)**:
+```
+1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+```
+
+### Tab Specification
+Specify which tab (sheet) within the spreadsheet to use:
+
+- **Tab Name**: Enter the exact name of the tab (e.g., "Data Import", "Sales Data")
+- **Case Sensitive**: Tab names must match exactly
+- **Optional**: If left empty, uses the first tab in the spreadsheet
+- **Auto-Creation**: If the specified tab doesn't exist, it will be created automatically
+- **All Modes Supported**: Tab creation works with clearAndReuse, append, and recreate modes
+
+**Example Configuration**:
+```
+Destination: https://docs.google.com/spreadsheets/d/1BxiMVs0.../edit
+Destination Tab: Monthly Reports
+```
 
 ## 🛡️ Error Handling
 
@@ -196,6 +247,10 @@ LOG_RETENTION_DAYS = 30        // Log cleanup period
 - **Methods**: `email`, `gSheet`, `push`
 - **Modes**: `clearAndReuse`, `append`, `recreate`
 - **File Extensions**: `.csv` (case-insensitive)
+- **Destination Formats**:
+  - Google Sheets URL: `https://docs.google.com/spreadsheets/d/[44-char-id]/edit`
+  - Sheet ID: `[44-character-alphanumeric-string]`
+- **Destination Tab**: Any valid sheet tab name (case-sensitive, optional)
 
 ## 🚨 Troubleshooting
 
@@ -212,9 +267,20 @@ LOG_RETENTION_DAYS = 30        // Log cleanup period
 - Ensure CSV files have `.csv` extension
 
 **"Cannot access sheet with ID"**
-- Verify Sheet ID is correct (44 characters)
+- Verify Sheet ID is correct (44 characters) or URL format is valid
 - Check sharing permissions on destination sheet
-- Ensure Sheet ID exists and is accessible
+- Ensure Sheet ID/URL exists and is accessible
+
+**"Tab creation failed"** (Rare)
+- Tab names may contain invalid characters
+- Spreadsheet may have reached Google's tab limit
+- Check permissions to modify the destination spreadsheet
+- Note: Most tab issues are now auto-resolved by creating missing tabs
+
+**"Invalid Google Sheets URL format"**
+- Ensure URL follows the pattern: `https://docs.google.com/spreadsheets/d/[SHEET_ID]/`
+- Copy the URL directly from the browser address bar
+- Remove any additional parameters after `/edit`
 
 **"CSV file exceeds maximum rows"**
 - File has >75K rows - split file or increase limit

@@ -20,7 +20,7 @@ function processPushRule(rule, sessionId) {
     }
 
     // Get destination sheet
-    const destSheet = getDestinationSheet(rule);
+    const destSheet = getDestinationSheet(rule, sessionId);
 
     // Push data to destination
     const rowsWritten = applyDataToSheet(currentData, destSheet, rule.mode);

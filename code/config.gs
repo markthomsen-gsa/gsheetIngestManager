@@ -43,8 +43,9 @@ const RULE_COLUMNS = {
   SOURCE_QUERY: 3,
   ATTACHMENT_PATTERN: 4,
   DESTINATION: 5,
-  MODE: 6,
-  EMAIL_RECIPIENTS: 7
+  DESTINATION_TAB: 6,
+  MODE: 7,
+  EMAIL_RECIPIENTS: 8
 };
 
 // Valid values for rule fields
