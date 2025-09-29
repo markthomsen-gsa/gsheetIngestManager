@@ -140,7 +140,9 @@ function runAll() {
       totalRows: totalRows,
       executionTime: executionTime,
       spreadsheetName: spreadsheetName,
-      spreadsheetUrl: spreadsheetUrl
+      spreadsheetUrl: spreadsheetUrl,
+      logsSheetUrl: getLogsSheetUrl(),
+      rulesSheetUrl: getRulesSheetUrl()
     });
 
   } catch (error) {
@@ -167,7 +169,9 @@ function runAll() {
       totalRows: 0,
       executionTime: executionTime,
       spreadsheetName: spreadsheetName,
-      spreadsheetUrl: spreadsheetUrl
+      spreadsheetUrl: spreadsheetUrl,
+      logsSheetUrl: getLogsSheetUrl(),
+      rulesSheetUrl: getRulesSheetUrl()
     });
   }
 }

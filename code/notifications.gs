@@ -14,6 +14,8 @@ Started at: {{timestamp}}
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
+View logs: {{logsSheetUrl}}
+View rules: {{rulesSheetUrl}}
 
 This is an automated notification.`
   },
@@ -30,6 +32,8 @@ Results:
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
+View logs: {{logsSheetUrl}}
+View rules: {{rulesSheetUrl}}
 
 This is an automated notification.`
   },
@@ -48,6 +52,8 @@ Please check the logs sheet for detailed information.
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
+View logs: {{logsSheetUrl}}
+View rules: {{rulesSheetUrl}}
 
 This is an automated notification.`
   },
@@ -67,6 +73,8 @@ Please check the logs sheet for details on failed rules.
 
 Spreadsheet: {{spreadsheetName}}
 View spreadsheet: {{spreadsheetUrl}}
+View logs: {{logsSheetUrl}}
+View rules: {{rulesSheetUrl}}
 
 This is an automated notification.`
   }
@@ -142,6 +150,42 @@ function sendSessionNotification(type, sessionId, data) {
 }
 
 /**
+ * Get direct URL to logs sheet tab
+ */
+function getLogsSheetUrl() {
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const logsSheet = getSheet('logs');
+    const baseUrl = spreadsheet.getUrl();
+    const sheetId = logsSheet.getSheetId();
+
+    // Generate direct URL to logs sheet tab
+    return `${baseUrl}#gid=${sheetId}`;
+  } catch (error) {
+    console.error('Failed to generate logs sheet URL:', error.message);
+    return SpreadsheetApp.getActiveSpreadsheet().getUrl(); // Fallback to main spreadsheet
+  }
+}
+
+/**
+ * Get direct URL to rules sheet tab
+ */
+function getRulesSheetUrl() {
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const rulesSheet = getSheet('rules');
+    const baseUrl = spreadsheet.getUrl();
+    const sheetId = rulesSheet.getSheetId();
+
+    // Generate direct URL to rules sheet tab
+    return `${baseUrl}#gid=${sheetId}`;
+  } catch (error) {
+    console.error('Failed to generate rules sheet URL:', error.message);
+    return SpreadsheetApp.getActiveSpreadsheet().getUrl(); // Fallback to main spreadsheet
+  }
+}
+
+/**
  * Get all unique email recipients from active rules
  */
 function getAllEmailRecipients() {
@@ -201,7 +245,9 @@ function testEmailNotifications() {
     timestamp: formatTimestamp(new Date()),
     errorMessage: 'Test error for demonstration',
     spreadsheetName: 'Data Ingestion Control Panel',
-    spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit'
+    spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
+    logsSheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=123456789',
+    rulesSheetUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=987654321'
   };
 
   console.log('Testing email templates...');
