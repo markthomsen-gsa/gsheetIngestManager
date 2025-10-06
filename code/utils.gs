@@ -29,6 +29,39 @@ function extractSheetIdFromUrl(url) {
 }
 
 /**
+ * Parse Google Sheets URL to extract sheet ID and optional GID
+ * Supports multiple URL formats:
+ * - /spreadsheets/d/SHEET_ID/edit
+ * - /spreadsheets/d/SHEET_ID/edit#gid=123456789
+ * - /spreadsheets/d/SHEET_ID/edit?param=value#gid=123456789
+ *
+ * @param {string} url - Google Sheets URL
+ * @returns {Object} { sheetId: string, gid: string|null }
+ * @throws {Error} If URL format is invalid
+ */
+function parseSheetUrl(url) {
+  if (!url || typeof url !== 'string') {
+    throw new Error('Invalid URL: must be a non-empty string');
+  }
+
+  // Extract sheet ID
+  const sheetIdMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{44})\//);
+  if (!sheetIdMatch) {
+    throw new Error('Invalid Google Sheets URL: sheet ID not found');
+  }
+  const sheetId = sheetIdMatch[1];
+
+  // Extract GID if present (after #gid=)
+  let gid = null;
+  const gidMatch = url.match(/#gid=([0-9]+)/);
+  if (gidMatch) {
+    gid = gidMatch[1];
+  }
+
+  return { sheetId, gid };
+}
+
+/**
  * Parse destination field - handles both URLs and IDs
  */
 function parseDestination(destination) {
@@ -87,6 +120,7 @@ function detectColumnPositions(headers) {
     method: ['Method', 'method'],
     sourceQuery: ['Source Query', 'source query', 'query'],
     attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
+    sourceTab: ['Source Tab', 'source tab', 'Source Tab Name', 'source'],
     destination: ['Destination (URL, ID, or empty for current)', 'Destination (URL or ID)', 'Destination', 'destination'],
     destinationTab: ['Destination Tab', 'destination tab', 'tab'],
     mode: ['Mode', 'mode'],
@@ -131,6 +165,7 @@ function parseRuleFromRow(row, columnMap) {
     method: getValueFromRow(row, columnMap, 'method'),
     sourceQuery: getValueFromRow(row, columnMap, 'sourceQuery'),
     attachmentPattern: getValueFromRow(row, columnMap, 'attachmentPattern'),
+    sourceTab: getValueFromRow(row, columnMap, 'sourceTab'),
     destination: getValueFromRow(row, columnMap, 'destination'),
     destinationTab: getValueFromRow(row, columnMap, 'destinationTab'),
     mode: getValueFromRow(row, columnMap, 'mode'),
@@ -167,10 +202,26 @@ function validateRule(rule) {
 
   if (rule.method === 'gSheet') {
     if (!rule.sourceQuery) {
-      errors.push('gSheet method requires source sheet ID');
-    } else if (!isValidSheetId(rule.sourceQuery)) {
-      errors.push('Invalid source sheet ID format');
+      errors.push('gSheet method requires source sheet ID or URL');
+    } else {
+      // Check if it's a URL or sheet ID
+      const sourceQuery = rule.sourceQuery.trim();
+      if (sourceQuery.includes('docs.google.com/spreadsheets')) {
+        // Validate URL format
+        try {
+          parseSheetUrl(sourceQuery);
+        } catch (error) {
+          errors.push(`Invalid source URL: ${error.message}`);
+        }
+      } else {
+        // Validate sheet ID format
+        if (!isValidSheetId(sourceQuery)) {
+          errors.push('Invalid source sheet ID format (must be 44 characters or valid URL)');
+        }
+      }
     }
+
+    // Source Tab is optional - no validation needed (any string is valid)
   }
 
   // Destination validation - support both URLs and IDs
@@ -294,6 +345,7 @@ function createRulesSheet() {
       'Method',
       'Source Query',
       'Attachment Pattern',
+      'Source Tab',
       'Destination (URL, ID, or empty for current)',
       'Destination Tab',
       'Mode',
@@ -307,13 +359,14 @@ function createRulesSheet() {
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#E8F0FE');
 
-    // Add example rule
+    // Add example rule for email method
     const exampleRule = [
       'example-rule',
       true,
       'email',
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
+      '',  // Source Tab (not used for email)
       'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit',
       'Data Import',
       'clearAndReuse',
@@ -321,6 +374,22 @@ function createRulesSheet() {
     ];
 
     sheet.getRange(2, 1, 1, exampleRule.length).setValues([exampleRule]);
+
+    // Add gSheet example rule
+    const gSheetExampleRule = [
+      'gsheet-example',
+      false,  // Inactive by default
+      'gSheet',
+      'https://docs.google.com/spreadsheets/d/SOURCE_SHEET_ID_HERE/edit#gid=0',
+      '',  // Not used for gSheet
+      'Sales Data',  // Source tab name
+      '',  // Empty = current spreadsheet
+      'Monthly Import',
+      'clearAndReuse',
+      ''
+    ];
+
+    sheet.getRange(3, 1, 1, gSheetExampleRule.length).setValues([gSheetExampleRule]);
 
     // Add data validation for specific columns
     addRuleValidation(sheet);
@@ -355,6 +424,14 @@ function addRuleValidation(sheet) {
     .requireValueInList([true, false])
     .build();
   activeRange.setDataValidation(activeValidation);
+
+  // Add note to Source Tab column header
+  const sourceTabHeader = sheet.getRange(1, RULE_COLUMNS.SOURCE_TAB + 1);
+  sourceTabHeader.setNote(
+    'Optional: Specify tab name to read from source sheet (gSheet method only).\n' +
+    'Leave empty to use first tab.\n' +
+    'Not used for email or push methods.'
+  );
 }
 
 /**

@@ -42,10 +42,11 @@ const RULE_COLUMNS = {
   METHOD: 2,
   SOURCE_QUERY: 3,
   ATTACHMENT_PATTERN: 4,
-  DESTINATION: 5,
-  DESTINATION_TAB: 6,
-  MODE: 7,
-  EMAIL_RECIPIENTS: 8
+  SOURCE_TAB: 5,              // NEW: Tab name for gSheet source
+  DESTINATION: 6,             // Was 5
+  DESTINATION_TAB: 7,         // Was 6
+  MODE: 8,                    // Was 7
+  EMAIL_RECIPIENTS: 9         // Was 8
 };
 
 // Valid values for rule fields

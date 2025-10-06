@@ -216,6 +216,11 @@ function formatRulesForStart(rules) {
       formattedRules += `   Gmail Search Link: ${createGmailSearchUrl(rule.sourceQuery)}\n`;
     } else if (rule.method === 'gSheet') {
       formattedRules += `   Source Sheet: ${convertSheetIdToUrl(rule.sourceQuery)}\n`;
+      if (rule.sourceTab) {
+        formattedRules += `   Source Tab: ${rule.sourceTab}\n`;
+      } else {
+        formattedRules += `   Source Tab: (first sheet - default)\n`;
+      }
     } else if (rule.method === 'push') {
       formattedRules += `   Source: Current spreadsheet\n`;
     }
@@ -263,7 +268,23 @@ function formatRulesResults(ruleResults) {
         formattedResults += `   Processed File: ${result.filename}\n`;
       }
     } else if (rule.method === 'gSheet') {
-      formattedResults += `   Source: ${convertSheetIdToUrl(rule.sourceQuery)}\n`;
+      const sourceUrl = convertSheetIdToUrl(rule.sourceQuery);
+      formattedResults += `   Source: ${sourceUrl}\n`;
+
+      // Add source tab information
+      if (rule.sourceTab) {
+        formattedResults += `   Source Tab: ${rule.sourceTab}\n`;
+      } else {
+        formattedResults += `   Source Tab: (first sheet - default)\n`;
+      }
+
+      // Add direct link to source tab if we have the GID
+      if (status === 'success' && result.sourceSheetGid) {
+        const sourceSheetId = rule.sourceQuery.includes('docs.google.com/spreadsheets')
+          ? parseSheetUrl(rule.sourceQuery).sheetId
+          : rule.sourceQuery;
+        formattedResults += `   Direct Link: https://docs.google.com/spreadsheets/d/${sourceSheetId}/edit#gid=${result.sourceSheetGid}\n`;
+      }
     } else if (rule.method === 'push') {
       formattedResults += `   Source: Current spreadsheet → ${rule.destinationTab || 'Default'} tab\n`;
     }

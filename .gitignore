@@ -4,3 +4,7 @@ docs/
 .clasp.json
 .claude/
 .DS_Store
+*.code-workspace
+.clasp.json
+clasp-mgr.json
+Claude's Plan.md
