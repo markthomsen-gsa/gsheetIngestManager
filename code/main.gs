@@ -8,11 +8,15 @@
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('📊 Data Ingest')
+  const menu = ui.createMenu('📊 Data Ingest')
     .addItem('🚀 Ingest Data', 'runAll')
-    .addItem('⚙️ Initialize System', 'setupSheets')
-    .addItem('📋 View Logs', 'navigateToLogs')
-    .addItem('📝 View Rules', 'navigateToRules')
+    .addSubMenu(
+      ui.createMenu('🛠️ Maintenance')
+        .addItem('⚙️ Initialize System', 'setupSheets')
+        .addItem('📋 View Logs', 'navigateToLogs')
+        .addItem('🗑️ Clear Logs', 'clearLogs')
+        .addItem('📝 View Rules', 'navigateToRules')
+    )
     .addToUi();
 }
 
@@ -311,12 +315,10 @@ function navigateToLogs() {
     const sheet = getSheet('logs');
     sheet.activate();
 
-    // Position user at the most recent activity
+    // Jump to the last row with data
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
-      // Show recent entries for context
-      const startRow = Math.max(lastRow - 10, 2); // Show last 10 entries
-      sheet.setActiveRange(sheet.getRange(startRow, 1, 1, 6));
+      sheet.setActiveRange(sheet.getRange(lastRow + 10, 1, 1, 6));
     } else {
       // Position at the first data row if sheet is empty
       sheet.setActiveRange(sheet.getRange(2, 1, 1, 6));

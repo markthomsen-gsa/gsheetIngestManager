@@ -96,6 +96,9 @@ function createLogsSheet() {
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#E8F0FE');
+    
+    // Freeze the top row (header row)
+    sheet.setFrozenRows(1);
   }
 
   return sheet;
@@ -208,4 +211,45 @@ function getRecentSessions(limit = 10) {
   return Array.from(sessions.values())
     .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
     .slice(0, limit);
+}
+
+/**
+ * Clear all log entries (keeping headers)
+ */
+function clearLogs() {
+  try {
+    const logsSheet = getSheet('logs');
+    const lastRow = logsSheet.getLastRow();
+    
+    // If there are no data rows (only headers), nothing to clear
+    if (lastRow <= 1) {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        'No logs to clear',
+        'Clear Logs',
+        TOAST_DURATION_MS
+      );
+      return;
+    }
+
+    // Clear all data rows (keep header row)
+    const dataRange = logsSheet.getRange(2, 1, lastRow - 1, 6);
+    dataRange.clearContent();
+
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Cleared ${lastRow - 1} log entries`,
+      'Clear Logs',
+      TOAST_DURATION_MS
+    );
+
+    // Position at the header row
+    logsSheet.setActiveRange(logsSheet.getRange(1, 1, 1, 6));
+    SpreadsheetApp.flush();
+
+  } catch (error) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Failed to clear logs: ${error.message}`,
+      'Clear Logs Error',
+      TOAST_LONG_DURATION_MS
+    );
+  }
 }
