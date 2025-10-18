@@ -20,8 +20,30 @@ function processEmailRule(rule, sessionId) {
     }
 
     // Process recent emails (limit to prevent timeout)
-    for (const thread of emails.slice(0, 10)) {
+    for (const thread of emails.slice(0, 5)) {
       const messages = thread.getMessages();
+
+      // Log how many messages are in this thread
+      logEntry(sessionId, rule.id, 'INFO', `Thread ID: ${thread.getId()} contains ${messages.length} message(s)`);
+
+      for (const [i, message] of messages.entries()) {
+        const sender = message.getFrom();
+        const subject = message.getSubject();
+        const date = message.getDate();
+        // Convert date to EST (Eastern Standard Time / America/New_York)
+        const estDate = Utilities.formatDate(date, 'America/New_York', 'yyyy-MM-dd HH:mm:ss');
+        // Construct the Gmail URL for this message
+        const threadId = message.getThread().getId();
+        const messageId = message.getId();
+        const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${threadId}/${messageId}`;
+
+        logEntry(
+          sessionId,
+          rule.id,
+          'INFO',
+          `Message #${i + 1} in thread:\nSender: ${sender}\nDate Received (EST): ${estDate}\nSubject: ${subject}\nURL: ${gmailUrl}`
+        );
+      }
 
       for (const message of messages) {
         const result = processCsvAttachments(message, rule, sessionId);
