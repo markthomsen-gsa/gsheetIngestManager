@@ -5,6 +5,8 @@
 
 /**
  * Creates the main menu when spreadsheet opens
+ * Automatically called by Google Apps Script when the spreadsheet is opened
+ * @function onOpen
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
@@ -22,6 +24,8 @@ function onOpen() {
 
 /**
  * Main execution function - processes all active rules
+ * Orchestrates the entire data ingestion process including validation, processing, and notifications
+ * @function runAll
  */
 function runAll() {
   const sessionId = generateSessionId();
@@ -212,6 +216,18 @@ function runAll() {
 
 /**
  * Process a single rule based on its method
+ * Routes rule processing to appropriate handler based on method type
+ * @param {Object} rule - Rule configuration object
+ * @param {string} rule.id - Unique rule identifier
+ * @param {string} rule.method - Processing method ('email', 'gSheet', 'push')
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result with success status and row count
+ * @returns {boolean} returns.success - Whether processing succeeded
+ * @returns {number} returns.rowsProcessed - Number of rows processed
+ * @returns {Object} [returns.senderInfo] - Email sender information (email method only)
+ * @returns {string} [returns.gmailSearchUrl] - Gmail search URL (email method only)
+ * @returns {string} [returns.filename] - Processed filename (email method only)
+ * @returns {string} [returns.error] - Error message if processing failed
  */
 function processRule(rule, sessionId) {
   logEntry(sessionId, rule.id, 'START', `Processing rule: ${rule.method}`);
@@ -258,6 +274,18 @@ function processRule(rule, sessionId) {
 
 /**
  * Get all active rules from configuration sheet
+ * Reads rules from the rules sheet and filters for active ones
+ * @returns {Array<Object>} Array of active rule objects
+ * @returns {string} returns[].id - Rule identifier
+ * @returns {boolean} returns[].active - Whether rule is active
+ * @returns {string} returns[].method - Processing method
+ * @returns {string} returns[].sourceQuery - Source query/URL
+ * @returns {string} [returns[].attachmentPattern] - Attachment pattern regex
+ * @returns {string} [returns[].sourceTab] - Source tab name
+ * @returns {string} returns[].destination - Destination sheet ID/URL
+ * @returns {string} [returns[].destinationTab] - Destination tab name
+ * @returns {string} returns[].mode - Processing mode
+ * @returns {string} [returns[].emailRecipients] - Email notification recipients
  */
 function getActiveRules() {
   const rulesSheet = getSheet('rules');
@@ -286,6 +314,8 @@ function getActiveRules() {
 
 /**
  * Initialize system sheets
+ * Creates the rules and logs sheets with proper headers and formatting
+ * @function setupSheets
  */
 function setupSheets() {
   try {
@@ -309,6 +339,8 @@ function setupSheets() {
 
 /**
  * Navigate to logs sheet
+ * Switches to logs sheet and positions cursor for monitoring
+ * @function navigateToLogs
  */
 function navigateToLogs() {
   try {
@@ -342,6 +374,8 @@ function navigateToLogs() {
 
 /**
  * Navigate to rules configuration sheet
+ * Switches to rules sheet for configuration management
+ * @function navigateToRules
  */
 function navigateToRules() {
   try {

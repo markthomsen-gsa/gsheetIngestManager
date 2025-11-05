@@ -5,15 +5,23 @@
 
 /**
  * Generate unique session ID
+ * Creates timestamp-based session identifier with random suffix
+ * @returns {string} Unique session ID in format S-{timestamp}-{random}
  */
 function generateSessionId() {
-  const timestamp = new Date().getTime();
-  const random = Math.floor(Math.random() * 1000);
-  return `S${timestamp.toString().slice(-8)}${random.toString().padStart(3, '0')}`;
+  const epoch = Date.now();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let randomCode = '';
+  for (let i = 0; i < 4; i++) {
+    randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `S-${epoch}-${randomCode}`;
 }
 
 /**
  * Log session start
+ * Records session start event in logs
+ * @param {string} sessionId - Session identifier
  */
 function logSessionStart(sessionId) {
   const timestamp = new Date();
@@ -22,6 +30,10 @@ function logSessionStart(sessionId) {
 
 /**
  * Log session completion
+ * Records session completion with success/error counts
+ * @param {string} sessionId - Session identifier
+ * @param {number} successCount - Number of successful rules
+ * @param {number} errorCount - Number of failed rules
  */
 function logSessionComplete(sessionId, successCount, errorCount) {
   const message = `Session completed: ${successCount} successful, ${errorCount} failed`;
@@ -30,6 +42,12 @@ function logSessionComplete(sessionId, successCount, errorCount) {
 
 /**
  * Log entry to logs sheet
+ * Adds log entry to logs sheet with auto-scroll and formatting
+ * @param {string} sessionId - Session identifier
+ * @param {string} ruleId - Rule identifier
+ * @param {string} status - Log status (START, SUCCESS, ERROR, INFO, WARNING)
+ * @param {string} message - Log message
+ * @param {number} [rowsProcessed=0] - Number of rows processed
  */
 function logEntry(sessionId, ruleId, status, message, rowsProcessed = 0) {
   try {
@@ -44,10 +62,14 @@ function logEntry(sessionId, ruleId, status, message, rowsProcessed = 0) {
       message,
       rowsProcessed
     ]);
+    
+    // Set vertical alignment for the newly added row
+    const lastRow = logsSheet.getLastRow();
+    const newRowRange = logsSheet.getRange(lastRow, 1, 1, 6);
+    newRowRange.setVerticalAlignment('middle');
 
     // Auto-scroll to the latest entry for real-time monitoring
     try {
-      const lastRow = logsSheet.getLastRow();
       const activeSheet = SpreadsheetApp.getActiveSheet();
 
       // Only auto-scroll if we're currently on the logs sheet
@@ -75,6 +97,8 @@ function logEntry(sessionId, ruleId, status, message, rowsProcessed = 0) {
 
 /**
  * Create logs sheet with headers
+ * Creates logs sheet with proper headers, formatting, and frozen rows
+ * @returns {Sheet} Created logs sheet
  */
 function createLogsSheet() {
   const sheet = createSheet('logs');
@@ -96,9 +120,14 @@ function createLogsSheet() {
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#E8F0FE');
+    headerRange.setVerticalAlignment('middle');
     
     // Freeze the top row (header row)
     sheet.setFrozenRows(1);
+    
+    // Set vertical alignment for all cells in the sheet
+    const allDataRange = sheet.getRange(1, 1, 1, headers.length);
+    allDataRange.setVerticalAlignment('middle');
   }
 
   return sheet;
@@ -106,6 +135,15 @@ function createLogsSheet() {
 
 /**
  * Get logs for specific session
+ * Retrieves all log entries for a given session
+ * @param {string} sessionId - Session identifier
+ * @returns {Array<Object>} Array of log entries
+ * @returns {string} returns[].sessionId - Session identifier
+ * @returns {Date} returns[].timestamp - Log timestamp
+ * @returns {string} returns[].ruleId - Rule identifier
+ * @returns {string} returns[].status - Log status
+ * @returns {string} returns[].message - Log message
+ * @returns {number} returns[].rowsProcessed - Rows processed
  */
 function getSessionLogs(sessionId) {
   const logsSheet = getSheet('logs');
@@ -131,6 +169,9 @@ function getSessionLogs(sessionId) {
 
 /**
  * Clean up old log entries
+ * Removes log entries older than retention period
+ * @returns {number} Number of entries cleaned up
+ * @throws {Error} If cleanup operation fails
  */
 function cleanupLogs() {
   try {
@@ -165,6 +206,16 @@ function cleanupLogs() {
 
 /**
  * Get recent session summaries
+ * Analyzes logs to build session summaries with statistics
+ * @param {number} [limit=10] - Maximum number of sessions to return
+ * @returns {Array<Object>} Array of session summaries
+ * @returns {string} returns[].sessionId - Session identifier
+ * @returns {Date} returns[].startTime - Session start time
+ * @returns {Date} [returns[].endTime] - Session end time
+ * @returns {string} returns[].status - Session status
+ * @returns {number} returns[].ruleCount - Number of rules processed
+ * @returns {number} returns[].successCount - Number of successful rules
+ * @returns {number} returns[].errorCount - Number of failed rules
  */
 function getRecentSessions(limit = 10) {
   const logsSheet = getSheet('logs');
@@ -215,6 +266,8 @@ function getRecentSessions(limit = 10) {
 
 /**
  * Clear all log entries (keeping headers)
+ * Removes all log data while preserving header row
+ * @function clearLogs
  */
 function clearLogs() {
   try {

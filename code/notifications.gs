@@ -91,6 +91,13 @@ This is an automated notification.`
 
 /**
  * Get email content with variable substitution
+ * Processes email templates and replaces placeholder variables
+ * @param {string} type - Email template type (start, success, error, partial)
+ * @param {Object} [variables={}] - Variables to substitute in template
+ * @returns {Object} Email content
+ * @returns {string} returns.subject - Processed email subject
+ * @returns {string} returns.body - Processed email body
+ * @throws {Error} If template type is not found
  */
 function getEmailContent(type, variables = {}) {
   const template = EMAIL_TEMPLATES[type];
@@ -115,6 +122,10 @@ function getEmailContent(type, variables = {}) {
 
 /**
  * Send notification email
+ * Sends email notification to specified recipients
+ * @param {string} type - Email template type
+ * @param {Array<string>} recipients - Email addresses to send to
+ * @param {Object} variables - Variables for template substitution
  */
 function sendNotificationEmail(type, recipients, variables) {
   if (!recipients || recipients.length === 0) {
@@ -139,6 +150,10 @@ function sendNotificationEmail(type, recipients, variables) {
 
 /**
  * Send session notification based on results
+ * Sends appropriate notification email based on session outcome
+ * @param {string} type - Notification type (start, success, error, partial)
+ * @param {string} sessionId - Session identifier
+ * @param {Object} data - Session data for template variables
  */
 function sendSessionNotification(type, sessionId, data) {
   // Get all recipients from rules (collect unique emails)
@@ -160,6 +175,8 @@ function sendSessionNotification(type, sessionId, data) {
 
 /**
  * Get direct URL to logs sheet tab
+ * Generates URL that opens directly to the logs sheet tab
+ * @returns {string} Direct URL to logs sheet tab
  */
 function getLogsSheetUrl() {
   try {
@@ -178,6 +195,8 @@ function getLogsSheetUrl() {
 
 /**
  * Get direct URL to rules sheet tab
+ * Generates URL that opens directly to the rules sheet tab
+ * @returns {string} Direct URL to rules sheet tab
  */
 function getRulesSheetUrl() {
   try {
@@ -196,6 +215,9 @@ function getRulesSheetUrl() {
 
 /**
  * Format rules for session start notification
+ * Creates formatted text listing all rules scheduled for execution
+ * @param {Array<Object>} rules - Array of rule objects
+ * @returns {string} Formatted rules text for email
  */
 function formatRulesForStart(rules) {
   if (!rules || rules.length === 0) {
@@ -237,6 +259,9 @@ function formatRulesForStart(rules) {
 
 /**
  * Format rule execution results
+ * Creates formatted text showing results of rule execution
+ * @param {Array<Object>} ruleResults - Array of rule execution results
+ * @returns {string} Formatted results text for email
  */
 function formatRulesResults(ruleResults) {
   if (!ruleResults || ruleResults.length === 0) {
@@ -308,6 +333,9 @@ function formatRulesResults(ruleResults) {
 
 /**
  * Convert sheet ID to full URL (helper function)
+ * Converts sheet ID to full Google Sheets URL for display
+ * @param {string} sheetId - Sheet ID or URL
+ * @returns {string} Full Google Sheets URL
  */
 function convertSheetIdToUrl(sheetId) {
   if (!sheetId) {
@@ -331,6 +359,8 @@ function convertSheetIdToUrl(sheetId) {
 
 /**
  * Get all unique email recipients from active rules
+ * Collects and validates email addresses from all active rules
+ * @returns {Array<string>} Array of unique email addresses
  */
 function getAllEmailRecipients() {
   try {
@@ -357,6 +387,11 @@ function getAllEmailRecipients() {
 
 /**
  * Send rule-specific notification
+ * Sends notification email for a specific rule
+ * @param {string} type - Notification type
+ * @param {Object} rule - Rule configuration
+ * @param {string} sessionId - Session identifier
+ * @param {Object} data - Additional data for template
  */
 function sendRuleNotification(type, rule, sessionId, data) {
   if (!rule.emailRecipients || !rule.emailRecipients.trim()) {
@@ -376,6 +411,8 @@ function sendRuleNotification(type, rule, sessionId, data) {
 
 /**
  * Test email notification system
+ * Creates test data and validates email templates
+ * @function testEmailNotifications
  */
 function testEmailNotifications() {
   const testRecipients = ['test@example.com']; // Update with real email for testing

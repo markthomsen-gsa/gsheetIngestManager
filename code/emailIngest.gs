@@ -5,7 +5,17 @@
 
 /**
  * Process email rule to find and import CSV attachments
- * Returns number of rows processed
+ * Searches Gmail for emails matching the rule's query and processes CSV attachments
+ * @param {Object} rule - Email rule configuration
+ * @param {string} rule.id - Rule identifier
+ * @param {string} rule.sourceQuery - Gmail search query
+ * @param {string} rule.attachmentPattern - Regex pattern for attachment filtering
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result
+ * @returns {number} returns.rowsProcessed - Number of rows processed from CSV
+ * @returns {Object} [returns.senderInfo] - Email sender information
+ * @returns {string} [returns.gmailSearchUrl] - Gmail search URL
+ * @returns {string} [returns.filename] - Processed CSV filename
  */
 function processEmailRule(rule, sessionId) {
   logEntry(sessionId, rule.id, 'START', `Searching emails: ${rule.sourceQuery}`);
@@ -69,6 +79,17 @@ function processEmailRule(rule, sessionId) {
 
 /**
  * Process CSV attachments from a single email message
+ * Filters attachments by pattern and processes the first matching CSV
+ * @param {GmailMessage} message - Gmail message object
+ * @param {Object} rule - Rule configuration
+ * @param {string} rule.id - Rule identifier
+ * @param {string} rule.attachmentPattern - Regex pattern for attachment filtering
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result
+ * @returns {number} returns.rowsProcessed - Number of rows processed
+ * @returns {Object} [returns.senderInfo] - Email sender information
+ * @returns {string} [returns.gmailSearchUrl] - Gmail search URL
+ * @returns {string} [returns.filename] - Processed filename
  */
 function processCsvAttachments(message, rule, sessionId) {
   const attachments = message.getAttachments();
@@ -116,6 +137,17 @@ function processCsvAttachments(message, rule, sessionId) {
 
 /**
  * Core CSV processing function
+ * Handles CSV parsing, validation, and sheet operations
+ * @param {GmailAttachment} attachment - CSV attachment from Gmail
+ * @param {Object} rule - Rule configuration
+ * @param {string} rule.id - Rule identifier
+ * @param {string} rule.destination - Destination sheet ID/URL
+ * @param {string} rule.destinationTab - Destination tab name
+ * @param {string} rule.mode - Processing mode
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result
+ * @returns {number} returns.rowsProcessed - Number of rows written to sheet
+ * @throws {Error} If CSV parsing or sheet operations fail
  */
 function processCsvAttachment(attachment, rule, sessionId) {
   const fileName = attachment.getName();
@@ -154,6 +186,10 @@ function processCsvAttachment(attachment, rule, sessionId) {
 
 /**
  * Parse CSV with error handling and validation
+ * Uses Google's optimized CSV parser with comprehensive error handling
+ * @param {string} csvString - Raw CSV content as string
+ * @returns {Array<Array<string>>} Parsed CSV data as 2D array
+ * @throws {Error} If CSV parsing fails or results in invalid data
  */
 function parseCSVData(csvString) {
   try {
@@ -180,6 +216,9 @@ function parseCSVData(csvString) {
 
 /**
  * Validate CSV data structure and constraints
+ * Checks row count limits, column consistency, and minimum requirements
+ * @param {Array<Array<string>>} csvData - Parsed CSV data
+ * @throws {Error} If CSV structure is invalid or exceeds limits
  */
 function validateCSVStructure(csvData) {
   // Check row count limit
@@ -223,6 +262,12 @@ function validateCSVStructure(csvData) {
  * Get destination sheet with error handling
  * Supports both URLs and IDs, and specific tab names
  * Auto-creates tabs if they don't exist
+ * @param {Object} rule - Rule configuration
+ * @param {string} rule.destination - Destination sheet ID/URL
+ * @param {string} rule.destinationTab - Destination tab name
+ * @param {string} [sessionId] - Session identifier for logging
+ * @returns {Sheet} Google Sheets Sheet object
+ * @throws {Error} If sheet cannot be accessed or created
  */
 function getDestinationSheet(rule, sessionId = null) {
   try {
@@ -240,6 +285,12 @@ function getDestinationSheet(rule, sessionId = null) {
 
 /**
  * Apply CSV data to sheet based on processing mode
+ * Routes data application to appropriate mode handler
+ * @param {Array<Array<string>>} csvData - CSV data to apply
+ * @param {Sheet} sheet - Target Google Sheets object
+ * @param {string} mode - Processing mode ('clearAndReuse', 'append', 'recreate')
+ * @returns {number} Number of rows written to sheet
+ * @throws {Error} If mode is invalid or sheet operations fail
  */
 function applyCsvToSheet(csvData, sheet, mode) {
   switch (mode.toLowerCase()) {
@@ -259,6 +310,11 @@ function applyCsvToSheet(csvData, sheet, mode) {
 
 /**
  * Clear sheet and write new data
+ * Clears all existing content and writes CSV data starting from A1
+ * @param {Array<Array<string>>} csvData - CSV data to write
+ * @param {Sheet} sheet - Target Google Sheets object
+ * @returns {number} Number of rows written
+ * @throws {Error} If sheet operations fail
  */
 function clearAndReuse(csvData, sheet) {
   try {
@@ -278,6 +334,11 @@ function clearAndReuse(csvData, sheet) {
 
 /**
  * Append data to existing sheet
+ * Appends data rows while preserving existing content and headers
+ * @param {Array<Array<string>>} csvData - CSV data to append
+ * @param {Sheet} sheet - Target Google Sheets object
+ * @returns {number} Number of data rows appended (excludes header)
+ * @throws {Error} If sheet operations fail
  */
 function appendData(csvData, sheet) {
   try {
@@ -313,6 +374,11 @@ function appendData(csvData, sheet) {
 
 /**
  * Recreate sheet with new data
+ * Deletes existing sheet and creates new one with same name
+ * @param {Array<Array<string>>} csvData - CSV data to write
+ * @param {Sheet} sheet - Target Google Sheets object
+ * @returns {number} Number of rows written
+ * @throws {Error} If sheet operations fail
  */
 function recreateSheet(csvData, sheet) {
   try {
@@ -338,6 +404,11 @@ function recreateSheet(csvData, sheet) {
 
 /**
  * CSV processing with retry logic
+ * Wraps CSV processing with automatic retry for transient failures
+ * @param {GmailAttachment} attachment - CSV attachment
+ * @param {Object} rule - Rule configuration
+ * @param {string} sessionId - Session identifier
+ * @returns {Object} Processing result with retry handling
  */
 function processCSVWithRetry(attachment, rule, sessionId) {
   return executeWithRetry(() => {
@@ -347,6 +418,14 @@ function processCSVWithRetry(attachment, rule, sessionId) {
 
 /**
  * Extract sender information from Gmail message
+ * Parses sender name and email from Gmail message headers
+ * @param {GmailMessage} message - Gmail message object
+ * @returns {Object} Sender information
+ * @returns {string} returns.full - Full sender string from Gmail
+ * @returns {string} returns.email - Extracted email address
+ * @returns {string} returns.name - Extracted display name
+ * @returns {string} returns.subject - Message subject
+ * @returns {Date} returns.date - Message date
  */
 function extractSenderInfo(message) {
   try {
@@ -389,6 +468,9 @@ function extractSenderInfo(message) {
 
 /**
  * Create clickable Gmail search URL from search query
+ * Generates URL-encoded Gmail search link for easy access
+ * @param {string} searchQuery - Gmail search query
+ * @returns {string} Gmail search URL
  */
 function createGmailSearchUrl(searchQuery) {
   try {

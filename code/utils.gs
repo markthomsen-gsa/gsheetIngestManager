@@ -5,6 +5,9 @@
 
 /**
  * Validate Google Sheet ID format
+ * Checks if string matches Google Sheets ID format (44 characters)
+ * @param {string} sheetId - Sheet ID to validate
+ * @returns {boolean} True if valid sheet ID format
  */
 function isValidSheetId(sheetId) {
   // Google Sheet ID format: 44 characters, alphanumeric + hyphens/underscores
@@ -13,6 +16,9 @@ function isValidSheetId(sheetId) {
 
 /**
  * Validate Google Sheets URL format
+ * Checks if URL matches Google Sheets pattern
+ * @param {string} url - URL to validate
+ * @returns {boolean} True if valid Google Sheets URL
  */
 function isValidSheetUrl(url) {
   // Check if URL matches Google Sheets pattern
@@ -21,6 +27,9 @@ function isValidSheetUrl(url) {
 
 /**
  * Extract Sheet ID from Google Sheets URL
+ * Extracts 44-character sheet ID from Google Sheets URL
+ * @param {string} url - Google Sheets URL
+ * @returns {string|null} Sheet ID if found, null otherwise
  */
 function extractSheetIdFromUrl(url) {
   // Match: /spreadsheets/d/[SHEET_ID]/
@@ -63,6 +72,10 @@ function parseSheetUrl(url) {
 
 /**
  * Parse destination field - handles both URLs and IDs
+ * Converts destination input to sheet ID, with fallback to current spreadsheet
+ * @param {string} destination - Destination URL, ID, or empty string
+ * @returns {string} Sheet ID for destination
+ * @throws {Error} If destination format is invalid
  */
 function parseDestination(destination) {
   // Auto-default to current spreadsheet if destination is empty
@@ -89,6 +102,9 @@ function parseDestination(destination) {
 
 /**
  * Validate email address format
+ * Checks if string matches valid email format
+ * @param {string} email - Email address to validate
+ * @returns {boolean} True if valid email format
  */
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -96,6 +112,9 @@ function isValidEmail(email) {
 
 /**
  * Validate regex pattern
+ * Tests if string is a valid regular expression
+ * @param {string} pattern - Regex pattern to validate
+ * @returns {boolean} True if valid regex pattern
  */
 function isValidRegex(pattern) {
   try {
@@ -108,7 +127,19 @@ function isValidRegex(pattern) {
 
 /**
  * Detect column positions from spreadsheet headers
- * Returns mapping of field names to column indices (-1 if not found)
+ * Maps field names to column indices using flexible header matching
+ * @param {Array<string>} headers - Array of header strings
+ * @returns {Object} Column mapping object
+ * @returns {number} returns.id - Column index for Rule ID (-1 if not found)
+ * @returns {number} returns.active - Column index for Active (-1 if not found)
+ * @returns {number} returns.method - Column index for Method (-1 if not found)
+ * @returns {number} returns.sourceQuery - Column index for Source Query (-1 if not found)
+ * @returns {number} returns.attachmentPattern - Column index for Attachment Pattern (-1 if not found)
+ * @returns {number} returns.sourceTab - Column index for Source Tab (-1 if not found)
+ * @returns {number} returns.destination - Column index for Destination (-1 if not found)
+ * @returns {number} returns.destinationTab - Column index for Destination Tab (-1 if not found)
+ * @returns {number} returns.mode - Column index for Mode (-1 if not found)
+ * @returns {number} returns.emailRecipients - Column index for Email Recipients (-1 if not found)
  */
 function detectColumnPositions(headers) {
   const columnMap = {};
@@ -146,6 +177,11 @@ function detectColumnPositions(headers) {
 
 /**
  * Safely extract value from row using column mapping
+ * Gets value from row at specified column index with bounds checking
+ * @param {Array} row - Row data array
+ * @param {Object} columnMap - Column mapping object
+ * @param {string} field - Field name to extract
+ * @returns {*} Value at column position or undefined if not found
  */
 function getValueFromRow(row, columnMap, field) {
   const colIndex = columnMap[field];
@@ -157,6 +193,20 @@ function getValueFromRow(row, columnMap, field) {
 
 /**
  * Parse rule from row data using dynamic column detection
+ * Converts spreadsheet row data to rule object using column mapping
+ * @param {Array} row - Row data array
+ * @param {Object} columnMap - Column mapping object
+ * @returns {Object} Parsed rule object
+ * @returns {string} returns.id - Rule ID
+ * @returns {boolean} returns.active - Active status
+ * @returns {string} returns.method - Processing method
+ * @returns {string} returns.sourceQuery - Source query
+ * @returns {string} [returns.attachmentPattern] - Attachment pattern
+ * @returns {string} [returns.sourceTab] - Source tab name
+ * @returns {string} returns.destination - Destination
+ * @returns {string} [returns.destinationTab] - Destination tab
+ * @returns {string} returns.mode - Processing mode
+ * @returns {string} [returns.emailRecipients] - Email recipients
  */
 function parseRuleFromRow(row, columnMap) {
   return {
@@ -175,6 +225,9 @@ function parseRuleFromRow(row, columnMap) {
 
 /**
  * Validate individual rule configuration
+ * Performs comprehensive validation of rule configuration
+ * @param {Object} rule - Rule object to validate
+ * @returns {Array<string>} Array of validation error messages
  */
 function validateRule(rule) {
   const errors = [];
@@ -248,6 +301,9 @@ function validateRule(rule) {
 
 /**
  * Validate all rules in configuration sheet
+ * Validates all rules in the rules sheet and reports errors
+ * @returns {boolean} True if all rules are valid
+ * @throws {Error} If validation fails with detailed error messages
  */
 function validateAllRules() {
   try {
@@ -297,6 +353,11 @@ function validateAllRules() {
 
 /**
  * Execute function with retry logic
+ * Wraps function execution with exponential backoff retry
+ * @param {Function} operation - Function to execute
+ * @param {number} [maxRetries=RETRY_ATTEMPTS] - Maximum retry attempts
+ * @returns {*} Result of operation
+ * @throws {Error} If operation fails after all retries
  */
 function executeWithRetry(operation, maxRetries = RETRY_ATTEMPTS) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -318,6 +379,9 @@ function executeWithRetry(operation, maxRetries = RETRY_ATTEMPTS) {
 
 /**
  * Determine if error is retryable
+ * Checks if error message indicates a transient failure
+ * @param {Error} error - Error object to check
+ * @returns {boolean} True if error should be retried
  */
 function isRetryableError(error) {
   const retryablePatterns = [
@@ -333,6 +397,8 @@ function isRetryableError(error) {
 
 /**
  * Create rules configuration sheet
+ * Creates rules sheet with headers, examples, and data validation
+ * @returns {Sheet} Created rules sheet
  */
 function createRulesSheet() {
   const sheet = createSheet('rules');
@@ -358,6 +424,7 @@ function createRulesSheet() {
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#E8F0FE');
+    headerRange.setVerticalAlignment('middle');
 
     // Add example rule for email method
     const exampleRule = [
@@ -393,6 +460,12 @@ function createRulesSheet() {
 
     // Add data validation for specific columns
     addRuleValidation(sheet);
+    
+    // Set vertical alignment for all cells in the sheet
+    const lastRow = Math.max(sheet.getLastRow(), 3);
+    const lastCol = headers.length;
+    const allDataRange = sheet.getRange(1, 1, lastRow, lastCol);
+    allDataRange.setVerticalAlignment('middle');
   }
 
   return sheet;
@@ -400,6 +473,8 @@ function createRulesSheet() {
 
 /**
  * Add data validation to rules sheet
+ * Adds dropdown validation for method, mode, and active columns
+ * @param {Sheet} sheet - Rules sheet to add validation to
  */
 function addRuleValidation(sheet) {
   const lastRow = Math.max(sheet.getLastRow(), 100); // Ensure validation for future rows
@@ -436,6 +511,10 @@ function addRuleValidation(sheet) {
 
 /**
  * Get spreadsheet by ID with error handling
+ * Opens spreadsheet by ID with comprehensive error handling
+ * @param {string} sheetId - Google Sheets ID
+ * @returns {Spreadsheet} Google Sheets Spreadsheet object
+ * @throws {Error} If sheet cannot be accessed
  */
 function getSpreadsheetById(sheetId) {
   try {
@@ -447,6 +526,12 @@ function getSpreadsheetById(sheetId) {
 
 /**
  * Get existing sheet or create new one if it doesn't exist
+ * Finds sheet by name or creates it if missing
+ * @param {Spreadsheet} spreadsheet - Parent spreadsheet
+ * @param {string} tabName - Name of tab to find/create
+ * @param {string} [sessionId] - Session ID for logging
+ * @param {string} [ruleId] - Rule ID for logging
+ * @returns {Sheet} Google Sheets Sheet object
  */
 function getOrCreateSheet(spreadsheet, tabName, sessionId = null, ruleId = null) {
   // If no specific tab requested, use first sheet
@@ -483,6 +568,9 @@ function getOrCreateSheet(spreadsheet, tabName, sessionId = null, ruleId = null)
 
 /**
  * Format timestamp for display
+ * Formats date using script timezone
+ * @param {Date} date - Date to format
+ * @returns {string} Formatted timestamp string
  */
 function formatTimestamp(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
@@ -490,6 +578,9 @@ function formatTimestamp(date) {
 
 /**
  * Parse CSV file size estimation
+ * Estimates CSV file size in MB for validation
+ * @param {Array<Array<string>>|string} csvData - CSV data to estimate
+ * @returns {number} Estimated size in MB
  */
 function estimateCSVFileSize(csvData) {
   // Rough estimation: each character ≈ 1 byte
@@ -502,6 +593,10 @@ function estimateCSVFileSize(csvData) {
 
 /**
  * Check if CSV file exceeds size limits
+ * Validates CSV against size and row count limits
+ * @param {Array<Array<string>>} csvData - CSV data to validate
+ * @returns {boolean} True if CSV is within limits
+ * @throws {Error} If CSV exceeds limits
  */
 function validateCSVSize(csvData) {
   const estimatedSize = estimateCSVFileSize(csvData);

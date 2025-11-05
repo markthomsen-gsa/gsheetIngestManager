@@ -5,6 +5,15 @@
 
 /**
  * Process push rule to send data to external sheet
+ * Pushes data from current active sheet to destination sheet
+ * @param {Object} rule - Push rule configuration
+ * @param {string} rule.id - Rule identifier
+ * @param {string} [rule.destination] - Destination sheet ID/URL (empty = current)
+ * @param {string} [rule.destinationTab] - Destination tab name
+ * @param {string} rule.mode - Processing mode
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result
+ * @returns {number} returns.rowsProcessed - Number of rows transferred
  */
 function processPushRule(rule, sessionId) {
   const destDisplay = rule.destination || '(current spreadsheet)';

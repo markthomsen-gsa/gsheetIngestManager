@@ -113,6 +113,19 @@ function resolveSourceSheet(rule, sessionId) {
 
 /**
  * Process Google Sheets rule for data import
+ * Imports data from source sheet to destination sheet
+ * @param {Object} rule - Sheet rule configuration
+ * @param {string} rule.id - Rule identifier
+ * @param {string} rule.sourceQuery - Source sheet ID or URL
+ * @param {string} [rule.sourceTab] - Source tab name (optional)
+ * @param {string} rule.destination - Destination sheet ID/URL
+ * @param {string} [rule.destinationTab] - Destination tab name
+ * @param {string} rule.mode - Processing mode
+ * @param {string} sessionId - Session identifier for logging
+ * @returns {Object} Processing result
+ * @returns {number} returns.rowsProcessed - Number of rows transferred
+ * @returns {string} returns.sourceSheetName - Name of source sheet
+ * @returns {number} returns.sourceSheetGid - GID of source sheet
  */
 function processSheetRule(rule, sessionId) {
   logEntry(sessionId, rule.id, 'START', `Importing from sheet: ${rule.sourceQuery}`);
@@ -157,6 +170,12 @@ function processSheetRule(rule, sessionId) {
 
 /**
  * Apply sheet data with mode handling
+ * Validates data size and applies data using specified mode
+ * @param {Array<Array<string>>} data - Sheet data to apply
+ * @param {Sheet} sheet - Target Google Sheets object
+ * @param {string} mode - Processing mode
+ * @returns {number} Number of rows written
+ * @throws {Error} If data exceeds size limits
  */
 function applyDataToSheet(data, sheet, mode) {
   // Validate data size

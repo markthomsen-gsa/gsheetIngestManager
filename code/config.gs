@@ -74,6 +74,10 @@ const LOG_STATUS = {
 
 /**
  * Get sheet by type with error handling
+ * Retrieves sheet by configured name with comprehensive error handling
+ * @param {string} sheetType - Sheet type (rules, logs)
+ * @returns {Sheet} Google Sheets Sheet object
+ * @throws {Error} If sheet type is unknown or sheet not found
  */
 function getSheet(sheetType) {
   const sheetName = SHEET_NAMES[sheetType];
@@ -93,6 +97,9 @@ function getSheet(sheetType) {
 
 /**
  * Create sheet with error handling
+ * Creates new sheet with configured name if it doesn't exist
+ * @param {string} sheetType - Sheet type (rules, logs)
+ * @returns {Sheet} Google Sheets Sheet object
  */
 function createSheet(sheetType) {
   const sheetName = SHEET_NAMES[sheetType];
@@ -113,6 +120,14 @@ function createSheet(sheetType) {
 
 /**
  * Get system configuration summary
+ * Returns current system configuration values
+ * @returns {Object} Configuration object
+ * @returns {number} returns.maxRows - Maximum rows per file
+ * @returns {number} returns.maxFileSize - Maximum file size in MB
+ * @returns {number} returns.retryAttempts - Number of retry attempts
+ * @returns {Array<string>} returns.supportedExtensions - Supported file extensions
+ * @returns {Array<string>} returns.validMethods - Valid processing methods
+ * @returns {Array<string>} returns.validModes - Valid processing modes
  */
 function getSystemConfig() {
   return {

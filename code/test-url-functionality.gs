@@ -5,6 +5,8 @@
 
 /**
  * Test URL parsing and validation
+ * Tests parseDestination function with various input formats
+ * @function testUrlParsing
  */
 function testUrlParsing() {
   console.log('Testing URL parsing and validation...');
@@ -65,6 +67,8 @@ function testUrlParsing() {
 
 /**
  * Test URL validation functions
+ * Tests isValidSheetUrl function with various URL formats
+ * @function testUrlValidation
  */
 function testUrlValidation() {
   console.log('Testing URL validation functions...');
@@ -96,6 +100,8 @@ function testUrlValidation() {
 
 /**
  * Test rule validation with new fields
+ * Tests validateRule function with various rule configurations
+ * @function testRuleValidation
  */
 function testRuleValidation() {
   console.log('Testing rule validation with new fields...');
@@ -157,6 +163,8 @@ function testRuleValidation() {
 
 /**
  * Test tab creation functionality
+ * Tests getOrCreateSheet logic with mock data
+ * @function testTabCreation
  */
 function testTabCreation() {
   console.log('Testing tab creation functionality...');
@@ -243,6 +251,8 @@ function testTabCreation() {
 
 /**
  * Test append mode behavior with new tabs
+ * Tests appendData logic for different sheet states
+ * @function testAppendModeWithNewTabs
  */
 function testAppendModeWithNewTabs() {
   console.log('Testing append mode with new tabs...');
@@ -300,6 +310,8 @@ function testAppendModeWithNewTabs() {
 
 /**
  * Test missing destination column handling
+ * Tests column detection and rule parsing with missing columns
+ * @function testMissingDestinationColumn
  */
 function testMissingDestinationColumn() {
   console.log('Testing missing destination column handling...');
@@ -403,6 +415,8 @@ function testMissingDestinationColumn() {
 
 /**
  * Run all tests
+ * Executes all test functions in sequence
+ * @function runAllUrlTests
  */
 function runAllUrlTests() {
   console.log('🚀 Starting URL and Tab functionality tests...\n');
