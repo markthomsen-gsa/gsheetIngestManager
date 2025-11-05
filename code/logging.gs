@@ -128,6 +128,9 @@ function createLogsSheet() {
     // Set vertical alignment for all cells in the sheet
     const allDataRange = sheet.getRange(1, 1, 1, headers.length);
     allDataRange.setVerticalAlignment('middle');
+    
+    // Clean up: Remove extra rows and columns
+    cleanupSheetRowsAndColumns(sheet, headers.length, 10);
   }
 
   return sheet;

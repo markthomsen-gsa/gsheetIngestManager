@@ -69,7 +69,7 @@ function processEmailRule(rule, sessionId) {
     }
 
     logEntry(sessionId, rule.id, 'INFO', 'No matching CSV attachments found');
-    return { rowsProcessed: 0 };
+    return { rowsProcessed: 0, columnsProcessed: 0 };
 
   } catch (error) {
     logEntry(sessionId, rule.id, 'ERROR', `Email processing failed: ${error.message}`);
@@ -112,7 +112,7 @@ function processCsvAttachments(message, rule, sessionId) {
   });
 
   if (csvAttachments.length === 0) {
-    return { rowsProcessed: 0 };
+    return { rowsProcessed: 0, columnsProcessed: 0 };
   }
 
   // Process first matching CSV attachment only
@@ -171,11 +171,17 @@ function processCsvAttachment(attachment, rule, sessionId) {
 
     // Apply processing mode
     const rowsWritten = applyCsvToSheet(csvData, destSheet, rule.mode);
+    
+    // Calculate column count from CSV data
+    const columnsProcessed = csvData.length > 0 ? csvData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `${fileName}: ${rowsWritten} rows imported`);
 
-    return { rowsProcessed: rowsWritten };
+    return { 
+      rowsProcessed: rowsWritten,
+      columnsProcessed: columnsProcessed
+    };
 
   } catch (error) {
     logEntry(sessionId, rule.id, 'ERROR',

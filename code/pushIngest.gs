@@ -34,11 +34,17 @@ function processPushRule(rule, sessionId) {
 
     // Push data to destination
     const rowsWritten = applyDataToSheet(currentData, destSheet, rule.mode);
+    
+    // Calculate column count from current sheet data
+    const columnsProcessed = currentData.length > 0 ? currentData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `Data push: ${rowsWritten} rows transferred`);
 
-    return { rowsProcessed: rowsWritten };
+    return { 
+      rowsProcessed: rowsWritten,
+      columnsProcessed: columnsProcessed
+    };
 
   } catch (error) {
     logEntry(sessionId, rule.id, 'ERROR',

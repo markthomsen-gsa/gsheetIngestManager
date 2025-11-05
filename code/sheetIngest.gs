@@ -141,6 +141,7 @@ function processSheetRule(rule, sessionId) {
       logEntry(sessionId, rule.id, 'INFO', 'Source sheet is empty');
       return {
         rowsProcessed: 0,
+        columnsProcessed: 0,
         sourceSheetName: sourceSheet.getName(),
         sourceSheetGid: sourceSheet.getSheetId()
       };
@@ -151,12 +152,16 @@ function processSheetRule(rule, sessionId) {
 
     // Apply data to destination
     const rowsWritten = applyDataToSheet(sourceData, destSheet, rule.mode);
+    
+    // Calculate column count from source data
+    const columnsProcessed = sourceData.length > 0 ? sourceData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `Sheet import: ${rowsWritten} rows transferred from tab: ${sourceSheet.getName()}`);
 
     return {
       rowsProcessed: rowsWritten,
+      columnsProcessed: columnsProcessed,
       sourceSheetName: sourceSheet.getName(),
       sourceSheetGid: sourceSheet.getSheetId()
     };

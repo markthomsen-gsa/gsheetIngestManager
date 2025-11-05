@@ -37,16 +37,19 @@ const SUPPORTED_CSV_EXTENSIONS = ['.csv']; // Supported file extensions
 
 // Rule Configuration Column Mappings
 const RULE_COLUMNS = {
-  ID: 0,
-  ACTIVE: 1,
+  ACTIVE: 0,                  // Active column is now first
+  ID: 1,                      // Rule ID moved to second
   METHOD: 2,
   SOURCE_QUERY: 3,
   ATTACHMENT_PATTERN: 4,
-  SOURCE_TAB: 5,              // NEW: Tab name for gSheet source
-  DESTINATION: 6,             // Was 5
-  DESTINATION_TAB: 7,         // Was 6
-  MODE: 8,                    // Was 7
-  EMAIL_RECIPIENTS: 9         // Was 8
+  SOURCE_TAB: 5,              // Tab name for gSheet source
+  DESTINATION: 6,
+  DESTINATION_TAB: 7,
+  MODE: 8,
+  LAST_RUN_TIMESTAMP: 9,       // Timestamp of last run (success or fail)
+  LAST_RUN_RESULT: 10,        // Result status (SUCCESS/FAIL)
+  LAST_SUCCESS_DIMENSIONS: 11, // Data dimensions of last successful ingest
+  EMAIL_RECIPIENTS: 12        // Email recipients (last column)
 };
 
 // Valid values for rule fields

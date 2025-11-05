@@ -146,8 +146,8 @@ function detectColumnPositions(headers) {
 
   // Define possible header variations for each field
   const headerPatterns = {
+    active: ['Active', 'active'],  // Active is now first
     id: ['Rule ID', 'rule id', 'id'],
-    active: ['Active', 'active'],
     method: ['Method', 'method'],
     sourceQuery: ['Source Query', 'source query', 'query'],
     attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
@@ -155,6 +155,9 @@ function detectColumnPositions(headers) {
     destination: ['Destination (URL, ID, or empty for current)', 'Destination (URL or ID)', 'Destination', 'destination'],
     destinationTab: ['Destination Tab', 'destination tab', 'tab'],
     mode: ['Mode', 'mode'],
+    lastRunTimestamp: ['Last Run Timestamp', 'last run timestamp', 'last run', 'timestamp'],
+    lastRunResult: ['Last Run Result', 'last run result', 'result'],
+    lastSuccessDimensions: ['Last Success Dimensions', 'last success dimensions', 'dimensions', 'last dimensions'],
     emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails']
   };
 
@@ -219,6 +222,9 @@ function parseRuleFromRow(row, columnMap) {
     destination: getValueFromRow(row, columnMap, 'destination'),
     destinationTab: getValueFromRow(row, columnMap, 'destinationTab'),
     mode: getValueFromRow(row, columnMap, 'mode'),
+    lastRunTimestamp: getValueFromRow(row, columnMap, 'lastRunTimestamp'),
+    lastRunResult: getValueFromRow(row, columnMap, 'lastRunResult'),
+    lastSuccessDimensions: getValueFromRow(row, columnMap, 'lastSuccessDimensions'),
     emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients')
   };
 }
@@ -406,8 +412,8 @@ function createRulesSheet() {
   // Set up headers if sheet is empty
   if (sheet.getLastRow() === 0) {
     const headers = [
-      'Rule ID',
-      'Active',
+      'Active',                // Active column is now first
+      'Rule ID',               // Rule ID moved to second
       'Method',
       'Source Query',
       'Attachment Pattern',
@@ -415,6 +421,9 @@ function createRulesSheet() {
       'Destination (URL, ID, or empty for current)',
       'Destination Tab',
       'Mode',
+      'Last Run Timestamp',
+      'Last Run Result',
+      'Last Success Dimensions',
       'Email Recipients'
     ];
 
@@ -428,8 +437,8 @@ function createRulesSheet() {
 
     // Add example rule for email method
     const exampleRule = [
-      'example-rule',
-      true,
+      true,                     // Active (now first)
+      'example-rule',           // Rule ID (now second)
       'email',
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
@@ -437,15 +446,18 @@ function createRulesSheet() {
       'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit',
       'Data Import',
       'clearAndReuse',
-      'admin@company.com'
+      '',  // Last Run Timestamp
+      '',  // Last Run Result
+      '',  // Last Success Dimensions
+      'mark.thomsen@gsa.gov'
     ];
 
     sheet.getRange(2, 1, 1, exampleRule.length).setValues([exampleRule]);
 
     // Add gSheet example rule
     const gSheetExampleRule = [
-      'gsheet-example',
-      false,  // Inactive by default
+      false,  // Active (now first) - Inactive by default
+      'gsheet-example',         // Rule ID (now second)
       'gSheet',
       'https://docs.google.com/spreadsheets/d/SOURCE_SHEET_ID_HERE/edit#gid=0',
       '',  // Not used for gSheet
@@ -453,22 +465,53 @@ function createRulesSheet() {
       '',  // Empty = current spreadsheet
       'Monthly Import',
       'clearAndReuse',
+      '',  // Last Run Timestamp
+      '',  // Last Run Result
+      '',  // Last Success Dimensions
       ''
     ];
 
     sheet.getRange(3, 1, 1, gSheetExampleRule.length).setValues([gSheetExampleRule]);
 
-    // Add data validation for specific columns
-    addRuleValidation(sheet);
+    // Clean up FIRST: Remove extra rows and columns before applying validation
+    cleanupSheetRowsAndColumns(sheet, headers.length, 10);
     
     // Set vertical alignment for all cells in the sheet
-    const lastRow = Math.max(sheet.getLastRow(), 3);
+    const lastRow = sheet.getLastRow();
     const lastCol = headers.length;
     const allDataRange = sheet.getRange(1, 1, lastRow, lastCol);
     allDataRange.setVerticalAlignment('middle');
+    
+    // Add data validation for specific columns (only to existing rows)
+    addRuleValidation(sheet);
   }
 
   return sheet;
+}
+
+/**
+ * Clean up sheet by removing extra rows and columns
+ * Keeps only the specified number of rows and columns
+ * @param {Sheet} sheet - Sheet to clean up
+ * @param {number} maxColumns - Maximum number of columns to keep
+ * @param {number} maxRows - Maximum number of rows to keep
+ */
+function cleanupSheetRowsAndColumns(sheet, maxColumns, maxRows) {
+  // Get the actual maximum rows and columns in the sheet
+  const maxSheetRows = sheet.getMaxRows();
+  const maxSheetCols = sheet.getMaxColumns();
+  
+  // Delete extra rows (keep only maxRows rows)
+  if (maxSheetRows > maxRows) {
+    const rowsToDelete = maxSheetRows - maxRows;
+    sheet.deleteRows(maxRows + 1, rowsToDelete);
+  }
+  
+  // Delete extra columns (keep only maxColumns columns)
+  if (maxSheetCols > maxColumns) {
+    const colsToDelete = maxSheetCols - maxColumns;
+    sheet.deleteColumns(maxColumns + 1, colsToDelete);
+  }
 }
 
 /**
@@ -477,7 +520,15 @@ function createRulesSheet() {
  * @param {Sheet} sheet - Rules sheet to add validation to
  */
 function addRuleValidation(sheet) {
-  const lastRow = Math.max(sheet.getLastRow(), 100); // Ensure validation for future rows
+  // Only apply validation to rows that actually exist (don't create new rows)
+  const actualLastRow = sheet.getLastRow();
+  const maxRows = sheet.getMaxRows();
+  const lastRow = Math.min(Math.max(actualLastRow, 2), maxRows); // At least row 2 (header), but not beyond max
+  
+  // Only apply validation if there are data rows (beyond header)
+  if (lastRow < 2) {
+    return; // No data rows to validate
+  }
 
   // Method column validation
   const methodRange = sheet.getRange(2, RULE_COLUMNS.METHOD + 1, lastRow - 1, 1);
@@ -493,12 +544,19 @@ function addRuleValidation(sheet) {
     .build();
   modeRange.setDataValidation(modeValidation);
 
-  // Active column validation
+  // Active column validation - use checkboxes
   const activeRange = sheet.getRange(2, RULE_COLUMNS.ACTIVE + 1, lastRow - 1, 1);
   const activeValidation = SpreadsheetApp.newDataValidation()
-    .requireValueInList([true, false])
+    .requireCheckbox()
     .build();
   activeRange.setDataValidation(activeValidation);
+
+  // Set number format for Last Run Timestamp column (dddd, mmmm d, yyyy)
+  if (lastRow > 1) {
+    const timestampCol = RULE_COLUMNS.LAST_RUN_TIMESTAMP + 1;
+    const timestampColumnRange = sheet.getRange(2, timestampCol, lastRow - 1, 1);
+    timestampColumnRange.setNumberFormat('dddd, mmmm d, yyyy');
+  }
 
   // Add note to Source Tab column header
   const sourceTabHeader = sheet.getRange(1, RULE_COLUMNS.SOURCE_TAB + 1);
@@ -574,6 +632,18 @@ function getOrCreateSheet(spreadsheet, tabName, sessionId = null, ruleId = null)
  */
 function formatTimestamp(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+}
+
+/**
+ * Format last run timestamp for rules sheet
+ * Formats date as "Monday, March 3, 2025"
+ * @param {Date} date - Date to format
+ * @returns {Date} Date object formatted for Google Sheets display
+ */
+function formatLastRunTimestamp(date) {
+  // Return the date object - Google Sheets will format it
+  // We'll set the number format on the column to display as "Monday, March 3, 2025"
+  return date;
 }
 
 /**

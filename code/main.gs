@@ -127,6 +127,9 @@ function runAll() {
             status: 'error'
           });
         }
+        
+        // Update rule execution status in rules sheet
+        updateRuleExecutionStatus(rule, result, sessionId);
       } catch (error) {
         errorCount++;
         logEntry(sessionId, rule.id, 'ERROR', error.message);
@@ -135,6 +138,9 @@ function runAll() {
           result: { error: error.message },
           status: 'error'
         });
+        
+        // Update rule execution status even on error
+        updateRuleExecutionStatus(rule, { success: false, error: error.message }, sessionId);
       }
     }
 
@@ -257,13 +263,18 @@ function processRule(rule, sessionId) {
       return {
         success: true,
         rowsProcessed: result.rowsProcessed,
+        columnsProcessed: result.columnsProcessed,
         senderInfo: result.senderInfo,
         gmailSearchUrl: result.gmailSearchUrl,
         filename: result.filename
       };
     } else {
       logEntry(sessionId, rule.id, 'INFO', 'No data to process');
-      return { success: true, rowsProcessed: 0 };
+      return { 
+        success: true, 
+        rowsProcessed: 0,
+        columnsProcessed: result.columnsProcessed || 0
+      };
     }
 
   } catch (error) {
@@ -392,5 +403,87 @@ function navigateToRules() {
       'Error',
       TOAST_LONG_DURATION_MS
     );
+  }
+}
+
+/**
+ * Update rule execution status in rules sheet
+ * Updates last run timestamp, result, and dimensions columns after rule execution
+ * @param {Object} rule - Rule configuration object
+ * @param {string} rule.id - Rule identifier
+ * @param {Object} result - Execution result object
+ * @param {boolean} result.success - Whether execution succeeded
+ * @param {number} [result.rowsProcessed] - Number of rows processed
+ * @param {number} [result.columnsProcessed] - Number of columns processed
+ * @param {string} [result.error] - Error message if failed
+ * @param {string} sessionId - Session identifier for logging
+ */
+function updateRuleExecutionStatus(rule, result, sessionId) {
+  try {
+    const rulesSheet = getSheet('rules');
+    const data = rulesSheet.getDataRange().getValues();
+    
+    if (data.length < 2) {
+      return; // No rules to update
+    }
+    
+    const headers = data[0];
+    const columnMap = detectColumnPositions(headers);
+    
+    // Find the rule row by Rule ID
+    let ruleRowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      const rowRuleId = getValueFromRow(data[i], columnMap, 'id');
+      if (rowRuleId === rule.id) {
+        ruleRowIndex = i + 1; // Convert to 1-based row number
+        break;
+      }
+    }
+    
+    if (ruleRowIndex === -1) {
+      console.log(`Rule ${rule.id} not found in rules sheet`);
+      return;
+    }
+    
+    // Get column indices for new columns
+    const timestampCol = columnMap.lastRunTimestamp !== -1 ? columnMap.lastRunTimestamp + 1 : RULE_COLUMNS.LAST_RUN_TIMESTAMP + 1;
+    const resultCol = columnMap.lastRunResult !== -1 ? columnMap.lastRunResult + 1 : RULE_COLUMNS.LAST_RUN_RESULT + 1;
+    const dimensionsCol = columnMap.lastSuccessDimensions !== -1 ? columnMap.lastSuccessDimensions + 1 : RULE_COLUMNS.LAST_SUCCESS_DIMENSIONS + 1;
+    
+    const now = new Date();
+    const isSuccess = result.success === true;
+    const resultText = isSuccess ? 'SUCCESS' : 'FAIL';
+    
+    // Color constants
+    const SUCCESS_COLOR = '#C6EFCE'; // Light green
+    const FAIL_COLOR = '#FFC7CE'; // Light red
+    
+    // Update timestamp column
+    const timestampCell = rulesSheet.getRange(ruleRowIndex, timestampCol);
+    timestampCell.setValue(formatLastRunTimestamp(now));
+    timestampCell.setNumberFormat('dddd, mmmm d, yyyy'); // Format: Monday, March 3, 2025
+    timestampCell.setBackground(isSuccess ? SUCCESS_COLOR : FAIL_COLOR);
+    
+    // Update result column
+    const resultCell = rulesSheet.getRange(ruleRowIndex, resultCol);
+    resultCell.setValue(resultText);
+    resultCell.setBackground(isSuccess ? SUCCESS_COLOR : FAIL_COLOR);
+    
+    // Update dimensions column only on success
+    if (isSuccess && result.rowsProcessed !== undefined && result.columnsProcessed !== undefined) {
+      const dimensionsCell = rulesSheet.getRange(ruleRowIndex, dimensionsCol);
+      const dimensionsText = `${result.rowsProcessed}x${result.columnsProcessed}`;
+      dimensionsCell.setValue(dimensionsText);
+    } else if (isSuccess && result.rowsProcessed !== undefined) {
+      // If columnsProcessed not provided, calculate from data if available
+      // This is a fallback - ideally all ingest functions should return columnsProcessed
+      const dimensionsCell = rulesSheet.getRange(ruleRowIndex, dimensionsCol);
+      dimensionsCell.setValue(`${result.rowsProcessed}x?`);
+    }
+    
+  } catch (error) {
+    // Don't fail the entire session if status update fails
+    console.error(`Failed to update rule execution status for ${rule.id}: ${error.message}`);
+    logEntry(sessionId, rule.id, 'WARNING', `Could not update execution status: ${error.message}`);
   }
 }
