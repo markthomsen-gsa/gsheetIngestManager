@@ -332,6 +332,10 @@ function setupSheets() {
   try {
     createRulesSheet();
     createLogsSheet();
+    
+    // Apply validation color coding (in case sheet already existed)
+    const rulesSheet = getSheet('rules');
+    applyValidationColorCoding(rulesSheet);
 
     SpreadsheetApp.getActiveSpreadsheet().toast(
       'System sheets created successfully',

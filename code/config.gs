@@ -39,18 +39,19 @@ const SUPPORTED_CSV_EXTENSIONS = ['.csv']; // Supported file extensions
 const RULE_COLUMNS = {
   ACTIVE: 0,                  // Active column is now first
   ID: 1,                      // Rule ID moved to second
-  METHOD: 2,
-  SOURCE_QUERY: 3,
-  ATTACHMENT_PATTERN: 4,
-  SOURCE_TAB: 5,              // Tab name for gSheet source
-  DESTINATION: 6,
-  DESTINATION_TAB: 7,
-  MODE: 8,
-  LAST_SUCCESS_DIMENSIONS: 9, // Data dimensions of last successful ingest
-  LAST_RUN_RESULT: 10,        // Result status (SUCCESS/FAIL)
-  DAYS_SINCE_LAST_SUCCESS: 11, // Days since last successful ingest (formula)
-  LAST_RUN_TIMESTAMP: 12,     // Timestamp of last run (success or fail)
-  EMAIL_RECIPIENTS: 13        // Email recipients (last column)
+  VALIDATION_FORMULA: 2,      // Validation formula column (between ID and Method)
+  METHOD: 3,
+  SOURCE_QUERY: 4,
+  ATTACHMENT_PATTERN: 5,
+  SOURCE_TAB: 6,              // Tab name for gSheet source
+  DESTINATION: 7,
+  DESTINATION_TAB: 8,
+  MODE: 9,
+  LAST_SUCCESS_DIMENSIONS: 10, // Data dimensions of last successful ingest
+  LAST_RUN_RESULT: 11,        // Result status (SUCCESS/FAIL)
+  DAYS_SINCE_LAST_SUCCESS: 12, // Days since last successful ingest (formula)
+  LAST_RUN_TIMESTAMP: 13,     // Timestamp of last run (success or fail)
+  EMAIL_RECIPIENTS: 14        // Email recipients (last column)
 };
 
 // Valid values for rule fields

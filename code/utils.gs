@@ -148,6 +148,7 @@ function detectColumnPositions(headers) {
   const headerPatterns = {
     active: ['Active', 'active'],  // Active is now first
     id: ['Rule ID', 'rule id', 'id'],
+    validationFormula: ['Validation Formula', 'validation formula', 'validation', 'formula'],
     method: ['Method', 'method'],
     sourceQuery: ['Source Query', 'source query', 'query'],
     attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
@@ -216,6 +217,7 @@ function parseRuleFromRow(row, columnMap) {
   return {
     id: getValueFromRow(row, columnMap, 'id'),
     active: getValueFromRow(row, columnMap, 'active'),
+    validationFormula: getValueFromRow(row, columnMap, 'validationFormula'),
     method: getValueFromRow(row, columnMap, 'method'),
     sourceQuery: getValueFromRow(row, columnMap, 'sourceQuery'),
     attachmentPattern: getValueFromRow(row, columnMap, 'attachmentPattern'),
@@ -415,6 +417,7 @@ function createRulesSheet() {
     const headers = [
       'Active',                // Active column is now first
       'Rule ID',               // Rule ID moved to second
+      'Validation Formula',   // Validation Formula (between ID and Method)
       'Method',
       'Source Query',
       'Attachment Pattern',
@@ -441,6 +444,7 @@ function createRulesSheet() {
     const exampleRule = [
       true,                     // Active (now first)
       'example-rule',           // Rule ID (now second)
+      '',                       // Validation Formula (users can enter formulas manually)
       'email',
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
@@ -461,6 +465,7 @@ function createRulesSheet() {
     const gSheetExampleRule = [
       false,  // Active (now first) - Inactive by default
       'gsheet-example',         // Rule ID (now second)
+      '',                       // Validation Formula (users can enter formulas manually)
       'gSheet',
       'https://docs.google.com/spreadsheets/d/SOURCE_SHEET_ID_HERE/edit#gid=0',
       '',  // Not used for gSheet
@@ -569,6 +574,112 @@ function addRuleValidation(sheet) {
     'Leave empty to use first tab.\n' +
     'Not used for email or push methods.'
   );
+  
+  // Apply color coding to validation formula column
+  applyValidationColorCoding(sheet);
+}
+
+/**
+ * Apply color coding to validation formula column
+ * Applies conditional formatting rules to validation formula column based on prefix patterns
+ * Color rules: PASS prefix=green, FAIL prefix=red, WARN prefix=yellow, no pattern=preserve color
+ * Patterns are case-insensitive and support flexible spacing (PASS -, PASS-, pass -, etc.)
+ * @param {Sheet} sheet - Rules sheet to apply color coding to
+ */
+function applyValidationColorCoding(sheet) {
+  // Get validation formula column index
+  const validationCol = RULE_COLUMNS.VALIDATION_FORMULA + 1; // Convert to 1-based
+  
+  // Get column letter for formula reference
+  const colLetter = columnIndexToLetter(validationCol);
+  
+  // Apply formatting to entire column (from row 2 to maxRows) so it works for all existing and future rows
+  // This ensures conditional formatting applies to all rows, not just current data rows
+  const maxRows = sheet.getMaxRows();
+  const validationRange = sheet.getRange(2, validationCol, maxRows - 1, 1); // Row 2 to maxRows (skip header)
+  
+  // Color constants
+  const PASS_COLOR = '#C6EFCE';  // Green
+  const FAIL_COLOR = '#FFC7CE';  // Red
+  const WARN_COLOR = '#FFEB9C';  // Yellow
+  
+  // Get all existing conditional format rules from the sheet
+  let allRules = sheet.getConditionalFormatRules();
+  
+  // Filter out any existing rules that apply to the validation column
+  // Check if any range in the rule overlaps with our validation column
+  allRules = allRules.filter(rule => {
+    const ruleRanges = rule.getRanges();
+    return !ruleRanges.some(range => {
+      // Check if this range is in the same column as our validation column
+      const rangeCol = range.getColumn();
+      return rangeCol === validationCol;
+    });
+  });
+  
+  // Create conditional formatting rules using REGEXMATCH for pattern detection
+  // Patterns: PASS-, FAIL-, WARN- (case-insensitive, flexible spacing around dash)
+  const newRules = [];
+  
+  // Rule 1: PASS prefix = Green
+  // Matches: "PASS -", "PASS-", "pass -", "pass-", etc. (case-insensitive, flexible spacing)
+  const passRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^PASS\\s*-")`)
+    .setBackground(PASS_COLOR)
+    .build();
+  newRules.push(passRule);
+  
+  // Rule 2: FAIL prefix = Red
+  // Matches: "FAIL -", "FAIL-", "fail -", "fail-", etc. (case-insensitive, flexible spacing)
+  const failRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^FAIL\\s*-")`)
+    .setBackground(FAIL_COLOR)
+    .build();
+  newRules.push(failRule);
+  
+  // Rule 3: WARN prefix = Yellow
+  // Matches: "WARN -", "WARN-", "warn -", "warn-", etc. (case-insensitive, flexible spacing)
+  const warnRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^WARN\\s*-")`)
+    .setBackground(WARN_COLOR)
+    .build();
+  newRules.push(warnRule);
+  
+  // Add our new rules to the existing rules
+  allRules = allRules.concat(newRules);
+  
+  // Apply all rules to the sheet (this is a Sheet method, not Range method)
+  sheet.setConditionalFormatRules(allRules);
+  
+  // Force a recalculation
+  SpreadsheetApp.flush();
+}
+
+/**
+ * Test function to manually apply validation color coding
+ * Call this function to test or re-apply color coding to validation column
+ * @function testValidationColorCoding
+ */
+function testValidationColorCoding() {
+  try {
+    const sheet = getSheet('rules');
+    applyValidationColorCoding(sheet);
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Validation color coding applied',
+      'Success',
+      3000
+    );
+  } catch (error) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Error: ${error.message}`,
+      'Error',
+      5000
+    );
+    console.error('Error applying validation color coding:', error);
+  }
 }
 
 /**
