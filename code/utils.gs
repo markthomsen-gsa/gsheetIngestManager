@@ -159,7 +159,8 @@ function detectColumnPositions(headers) {
     lastRunResult: ['Last Run Result', 'last run result', 'result'],
     daysSinceLastSuccess: ['Days Since Last Success', 'days since last success', 'days since success', 'days'],
     lastRunTimestamp: ['Last Run Timestamp', 'last run timestamp', 'last run', 'timestamp'],
-    emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails']
+    emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails'],
+    validationFormula: ['Validation Formula', 'validation formula', 'validation', 'formula']
   };
 
   // Find each field's position
@@ -226,7 +227,8 @@ function parseRuleFromRow(row, columnMap) {
     lastRunTimestamp: getValueFromRow(row, columnMap, 'lastRunTimestamp'),
     lastRunResult: getValueFromRow(row, columnMap, 'lastRunResult'),
     lastSuccessDimensions: getValueFromRow(row, columnMap, 'lastSuccessDimensions'),
-    emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients')
+    emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients'),
+    validationFormula: getValueFromRow(row, columnMap, 'validationFormula')
   };
 }
 
@@ -415,6 +417,7 @@ function createRulesSheet() {
     const headers = [
       'Active',                // Active column is now first
       'Rule ID',               // Rule ID moved to second
+      'Validation Formula',   // Validation Formula (between ID and Method)
       'Method',
       'Source Query',
       'Attachment Pattern',
@@ -441,6 +444,7 @@ function createRulesSheet() {
     const exampleRule = [
       true,                     // Active (now first)
       'example-rule',           // Rule ID (now second)
+      '',                       // Validation Formula (users can enter formulas manually)
       'email',
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
@@ -461,6 +465,7 @@ function createRulesSheet() {
     const gSheetExampleRule = [
       false,  // Active (now first) - Inactive by default
       'gsheet-example',         // Rule ID (now second)
+      '',                       // Validation Formula (users can enter formulas manually)
       'gSheet',
       'https://docs.google.com/spreadsheets/d/SOURCE_SHEET_ID_HERE/edit#gid=0',
       '',  // Not used for gSheet
@@ -488,6 +493,9 @@ function createRulesSheet() {
     
     // Add data validation for specific columns (only to existing rows)
     addRuleValidation(sheet);
+    
+    // Apply color coding to validation formula column
+    applyValidationColorCoding(sheet);
   }
 
   return sheet;
@@ -569,6 +577,112 @@ function addRuleValidation(sheet) {
     'Leave empty to use first tab.\n' +
     'Not used for email or push methods.'
   );
+  
+  // Apply color coding to validation formula column
+  applyValidationColorCoding(sheet);
+}
+
+/**
+ * Apply color coding to validation formula column
+ * Applies conditional formatting rules to validation formula column based on cell value
+ * Color rules: TRUE=green, FALSE=red, blank=no color, anything else=yellow
+ * @param {Sheet} sheet - Rules sheet to apply color coding to
+ */
+function applyValidationColorCoding(sheet) {
+  // Get validation formula column index
+  const validationCol = RULE_COLUMNS.VALIDATION_FORMULA + 1; // Convert to 1-based
+  
+  // Get data range for validation column (skip header row)
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return; // No data rows to format
+  }
+  
+  const validationRange = sheet.getRange(2, validationCol, lastRow - 1, 1);
+  
+  // Get column letter for formula reference
+  const colLetter = columnIndexToLetter(validationCol);
+  
+  // Color constants
+  const TRUE_COLOR = '#C6EFCE';  // Green
+  const FALSE_COLOR = '#FFC7CE'; // Red
+  const OTHER_COLOR = '#FFEB9C'; // Yellow
+  
+  // Get all existing conditional format rules from the sheet
+  let allRules = sheet.getConditionalFormatRules();
+  
+  // Filter out any existing rules that apply to our validation range
+  // We'll replace them with our new rules
+  const validationRangeA1 = validationRange.getA1Notation();
+  allRules = allRules.filter(rule => {
+    // Check if this rule applies to our validation range
+    const ruleRanges = rule.getRanges();
+    return !ruleRanges.some(range => range.getA1Notation() === validationRangeA1);
+  });
+  
+  // Create conditional formatting rules
+  // In Google Sheets conditional formatting, we need to use relative references
+  // Using INDIRECT with ROW() to reference the current cell being evaluated
+  const newRules = [];
+  
+  // Rule 1: TRUE = Green
+  const trueRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=INDIRECT("${colLetter}"&ROW())=TRUE`)
+    .setBackground(TRUE_COLOR)
+    .build();
+  newRules.push(trueRule);
+  
+  // Rule 2: FALSE = Red
+  // Also check for text "FALSE" in case user typed it as text
+  // IMPORTANT: Exclude blank cells - they should have no color
+  const falseRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=AND(INDIRECT("${colLetter}"&ROW())<>"",OR(INDIRECT("${colLetter}"&ROW())=FALSE,INDIRECT("${colLetter}"&ROW())="FALSE"))`)
+    .setBackground(FALSE_COLOR)
+    .build();
+  newRules.push(falseRule);
+  
+  // Rule 3: Anything else (not TRUE, not FALSE, not blank) = Yellow
+  const otherRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([validationRange])
+    .whenFormulaSatisfied(`=AND(INDIRECT("${colLetter}"&ROW())<>TRUE,INDIRECT("${colLetter}"&ROW())<>FALSE,INDIRECT("${colLetter}"&ROW())<>"FALSE",INDIRECT("${colLetter}"&ROW())<>"")`)
+    .setBackground(OTHER_COLOR)
+    .build();
+  newRules.push(otherRule);
+  
+  // Add our new rules to the existing rules
+  allRules = allRules.concat(newRules);
+  
+  // Apply all rules to the sheet (this is a Sheet method, not Range method)
+  sheet.setConditionalFormatRules(allRules);
+  
+  // Force a recalculation
+  SpreadsheetApp.flush();
+}
+
+/**
+ * Test function to manually apply validation color coding
+ * Call this function to test or re-apply color coding to validation column
+ * @function testValidationColorCoding
+ */
+function testValidationColorCoding() {
+  try {
+    const sheet = getSheet('rules');
+    applyValidationColorCoding(sheet);
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Validation color coding applied',
+      'Success',
+      3000
+    );
+  } catch (error) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Error: ${error.message}`,
+      'Error',
+      5000
+    );
+    console.error('Error applying validation color coding:', error);
+  }
 }
 
 /**
