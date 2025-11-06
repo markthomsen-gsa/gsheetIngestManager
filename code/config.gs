@@ -62,19 +62,114 @@ const VALID_MODES = ['clearAndReuse', 'append', 'recreate'];
 const LOG_COLUMNS = {
   SESSION_ID: 0,
   TIMESTAMP: 1,
-  RULE_ID: 2,
-  STATUS: 3,
-  MESSAGE: 4,
-  ROWS_PROCESSED: 5
+  LOG_LEVEL: 2,              // Log level (TRACE, DEBUG, INFO, WARNING, ERROR, FATAL)
+  RULE_ID: 3,
+  STATUS: 4,                 // Status (START, SUCCESS, ERROR, etc.)
+  MESSAGE: 5,
+  EXECUTION_TIME_MS: 6,      // Execution time in milliseconds
+  ROWS_PROCESSED: 7,
+  COLUMNS_PROCESSED: 8,      // Column count
+  FILE_SIZE_BYTES: 9,       // File size (for email attachments)
+  SOURCE_TYPE: 10,          // Source type (email, gSheet, push)
+  SOURCE_IDENTIFIER: 11,    // Source URL/ID/query
+  ERROR_CODE: 12,           // Error code for categorization
+  ERROR_TYPE: 13,           // Error type (validation, network, etc.)
+  RETRY_ATTEMPT: 14,        // Retry attempt number (0 = first attempt)
+  DESTINATION_ID: 15,       // Destination sheet ID
+  DESTINATION_TAB: 16,      // Destination tab name
+  PROCESSING_MODE: 17,      // Processing mode (clearAndReuse, append, etc.)
+  METADATA: 18              // JSON string with additional context
 };
 
-// Status values for logging
+// Enhanced log levels for better filtering and debugging
+const LOG_LEVEL = {
+  TRACE: 'TRACE',       // Very detailed, step-by-step execution
+  DEBUG: 'DEBUG',       // Detailed debugging information
+  INFO: 'INFO',         // General informational messages
+  WARNING: 'WARNING',   // Warning messages (non-critical issues)
+  ERROR: 'ERROR',       // Error messages (recoverable)
+  FATAL: 'FATAL',       // Critical errors (system failures)
+  SUCCESS: 'SUCCESS',   // Successful operation completion
+  START: 'START'        // Operation start markers
+};
+
+// Status values for logging (used with log levels)
 const LOG_STATUS = {
   START: 'START',
   SUCCESS: 'SUCCESS',
   ERROR: 'ERROR',
   INFO: 'INFO',
   WARNING: 'WARNING'
+};
+
+// Error codes for categorization
+const ERROR_CODES = {
+  // Validation Errors (1000-1999)
+  VALIDATION_RULE_ID_MISSING: 'VAL-1001',
+  VALIDATION_METHOD_INVALID: 'VAL-1002',
+  VALIDATION_SHEET_ID_INVALID: 'VAL-1003',
+  VALIDATION_EMAIL_INVALID: 'VAL-1004',
+  VALIDATION_REGEX_INVALID: 'VAL-1005',
+  VALIDATION_MODE_INVALID: 'VAL-1006',
+  
+  // Source Errors (2000-2999)
+  SOURCE_SHEET_NOT_FOUND: 'SRC-2001',
+  SOURCE_SHEET_ACCESS_DENIED: 'SRC-2002',
+  SOURCE_TAB_NOT_FOUND: 'SRC-2003',
+  SOURCE_EMAIL_NOT_FOUND: 'SRC-2004',
+  SOURCE_ATTACHMENT_NOT_FOUND: 'SRC-2005',
+  SOURCE_QUERY_INVALID: 'SRC-2006',
+  
+  // Processing Errors (3000-3999)
+  PROCESSING_CSV_PARSE_ERROR: 'PRC-3001',
+  PROCESSING_FILE_TOO_LARGE: 'PRC-3002',
+  PROCESSING_TOO_MANY_ROWS: 'PRC-3003',
+  PROCESSING_TIMEOUT: 'PRC-3004',
+  PROCESSING_MEMORY_LIMIT: 'PRC-3005',
+  PROCESSING_COLUMN_MISMATCH: 'PRC-3006',
+  
+  // Destination Errors (4000-4999)
+  DEST_SHEET_NOT_FOUND: 'DST-4001',
+  DEST_SHEET_ACCESS_DENIED: 'DST-4002',
+  DEST_TAB_CREATE_FAILED: 'DST-4003',
+  DEST_WRITE_FAILED: 'DST-4004',
+  
+  // System Errors (5000-5999)
+  SYSTEM_TIMEOUT: 'SYS-5001',
+  SYSTEM_MEMORY_LIMIT: 'SYS-5002',
+  SYSTEM_RATE_LIMIT: 'SYS-5003',
+  SYSTEM_UNKNOWN_ERROR: 'SYS-5999'
+};
+
+// Error types for categorization
+const ERROR_TYPES = {
+  VALIDATION: 'validation',
+  SOURCE: 'source',
+  PROCESSING: 'processing',
+  DESTINATION: 'destination',
+  SYSTEM: 'system',
+  NETWORK: 'network',
+  PERMISSION: 'permission'
+};
+
+// Logging configuration
+const LOGGING_CONFIG = {
+  // Log level filtering
+  MIN_LOG_LEVEL: LOG_LEVEL.INFO,
+  ENABLE_DEBUG_LOGS: false,
+  ENABLE_TRACE_LOGS: false,
+  
+  // Performance tracking
+  ENABLE_PERFORMANCE_TRACKING: true,
+  LOG_SLOW_OPERATIONS_MS: 5000,  // Log operations slower than 5 seconds
+  
+  // Error tracking
+  ENABLE_ERROR_CATEGORIZATION: true,
+  LOG_ERROR_STACK_TRACES: false,  // Set to true for detailed error tracking
+  
+  // Metadata
+  ENABLE_METADATA_LOGGING: true,
+  MAX_METADATA_SIZE_BYTES: 10000  // Limit metadata JSON size
 };
 
 /**
