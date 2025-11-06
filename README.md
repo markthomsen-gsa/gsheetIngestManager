@@ -19,7 +19,7 @@ This is a complete rewrite of a legacy 5,000+ line monolithic system, reduced to
 
 ## 🏗️ Architecture
 
-### Modular Design (7 Files)
+### Modular Design (8 Core Files + Test Utilities)
 
 ```
 code/
@@ -30,7 +30,8 @@ code/
 ├── sheetIngest.gs       // Google Sheets data import operations
 ├── pushIngest.gs        // Data push to external sheets
 ├── notifications.gs     // Email notifications with templates
-└── utils.gs             // Shared utilities and validation
+├── utils.gs             // Shared utilities and validation
+└── test-url-functionality.gs  // Test utilities for URL and tab features
 ```
 
 ### Data Processing Limits
@@ -61,15 +62,19 @@ Configure your data ingestion rules:
 
 | Column | Field | Description | Example |
 |--------|-------|-------------|---------|
-| A | Rule ID | Unique identifier | `daily-sales` |
-| B | Active | TRUE/FALSE | `TRUE` |
+| A | Active | TRUE/FALSE toggle | `TRUE` |
+| B | Rule ID | Unique identifier | `daily-sales` |
 | C | Method | email/gSheet/push | `email` |
-| D | Source Query | Gmail query or Sheet ID | `from:reports@company.com` |
-| E | Attachment Pattern | Regex for CSV files | `sales-.*\.csv$` |
-| F | Destination | Sheet URL or ID | `https://docs.google.com/spreadsheets/d/1BxiMVs0.../edit` |
-| G | Destination Tab | Tab name (optional) | `Data Import` |
-| H | Mode | Processing mode | `clearAndReuse` |
-| I | Email Recipients | Notification emails | `admin@company.com` |
+| D | Source Query | Gmail query or Sheet ID/URL | `from:reports@company.com` |
+| E | Attachment Pattern | Regex for CSV files (email only) | `sales-.*\.csv$` |
+| F | Source Tab | Tab name for gSheet source (optional) | `Sales Data` |
+| G | Destination | Sheet URL/ID or empty for current | `https://docs.google.com/spreadsheets/d/1BxiMVs0.../edit` |
+| H | Destination Tab | Tab name (optional, auto-created if missing) | `Data Import` |
+| I | Mode | Processing mode | `clearAndReuse` |
+| J | Last Run Timestamp | Auto-populated after execution | (system managed) |
+| K | Last Run Result | Auto-populated: SUCCESS/FAIL | (system managed) |
+| L | Last Success Dimensions | Auto-populated: rows×columns | (system managed) |
+| M | Email Recipients | Notification emails (comma-separated) | `admin@company.com` |
 
 #### Logs Sheet (`ingest-logs`)
 Automatically tracks all operations with session correlation.
@@ -79,9 +84,11 @@ Automatically tracks all operations with session correlation.
 Access the system through the **📊 Data Ingest** menu:
 
 - **🚀 Ingest Data**: Execute all active rules
-- **⚙️ Initialize System**: Create required sheets
-- **📋 View Logs**: Navigate to logs sheet
-- **📝 View Rules**: Navigate to rules configuration
+- **🛠️ Maintenance** submenu:
+  - **⚙️ Initialize System**: Create required sheets
+  - **📋 View Logs**: Navigate to logs sheet
+  - **🗑️ Clear Logs**: Clear all log entries
+  - **📝 View Rules**: Navigate to rules configuration
 
 ## 📋 Processing Methods
 
@@ -100,14 +107,16 @@ Attachment Pattern: report-\d{4}-\d{2}-\d{2}\.csv$
 
 ### Google Sheets Method
 - Imports data from source Google Sheets
-- Uses Sheet ID for cross-spreadsheet access
-- Transfers data from first sheet of source
+- Uses Sheet ID or URL for cross-spreadsheet access
+- Supports Source Tab field to specify which tab to read from
+- If Source Tab is empty, uses the first tab of the source sheet
 
 **Example Rule**:
 ```
 Rule ID: master-import
 Method: gSheet
 Source Query: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+Source Tab: Sales Data
 ```
 
 ### Push Method
@@ -166,6 +175,10 @@ https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2u
 ```
 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
 ```
+
+**Empty Destination (Default to Current)**:
+- If the Destination field is left empty, the system automatically uses the current spreadsheet
+- This is useful when you want to import data into the same spreadsheet where the rules are configured
 
 ### Tab Specification
 Specify which tab (sheet) within the spreadsheet to use:
