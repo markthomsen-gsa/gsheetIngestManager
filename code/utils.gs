@@ -624,12 +624,14 @@ function applyValidationColorCoding(sheet) {
   
   // Create conditional formatting rules using REGEXMATCH for pattern detection
   // Patterns: PASS-, FAIL-, WARN- (case-insensitive, flexible spacing around dash)
+  // Create separate range objects for each rule to ensure they're all independent
   const newRules = [];
   
   // Rule 1: PASS prefix = Green
   // Matches: "PASS -", "PASS-", "pass -", "pass-", etc. (case-insensitive, flexible spacing)
+  const passRange = sheet.getRange(2, validationCol, maxRows - 1, 1);
   const passRule = SpreadsheetApp.newConditionalFormatRule()
-    .setRanges([validationRange])
+    .setRanges([passRange])
     .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^PASS\\s*-")`)
     .setBackground(PASS_COLOR)
     .build();
@@ -637,8 +639,9 @@ function applyValidationColorCoding(sheet) {
   
   // Rule 2: FAIL prefix = Red
   // Matches: "FAIL -", "FAIL-", "fail -", "fail-", etc. (case-insensitive, flexible spacing)
+  const failRange = sheet.getRange(2, validationCol, maxRows - 1, 1);
   const failRule = SpreadsheetApp.newConditionalFormatRule()
-    .setRanges([validationRange])
+    .setRanges([failRange])
     .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^FAIL\\s*-")`)
     .setBackground(FAIL_COLOR)
     .build();
@@ -646,8 +649,9 @@ function applyValidationColorCoding(sheet) {
   
   // Rule 3: WARN prefix = Yellow
   // Matches: "WARN -", "WARN-", "warn -", "warn-", etc. (case-insensitive, flexible spacing)
+  const warnRange = sheet.getRange(2, validationCol, maxRows - 1, 1);
   const warnRule = SpreadsheetApp.newConditionalFormatRule()
-    .setRanges([validationRange])
+    .setRanges([warnRange])
     .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^WARN\\s*-")`)
     .setBackground(WARN_COLOR)
     .build();
