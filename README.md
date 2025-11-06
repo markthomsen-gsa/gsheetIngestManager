@@ -71,10 +71,11 @@ Configure your data ingestion rules:
 | G | Destination | Sheet URL/ID or empty for current | `https://docs.google.com/spreadsheets/d/1BxiMVs0.../edit` |
 | H | Destination Tab | Tab name (optional, auto-created if missing) | `Data Import` |
 | I | Mode | Processing mode | `clearAndReuse` |
-| J | Last Run Timestamp | Auto-populated after execution | (system managed) |
+| J | Last Success Dimensions | Auto-populated: rows×columns | (system managed) |
 | K | Last Run Result | Auto-populated: SUCCESS/FAIL | (system managed) |
-| L | Last Success Dimensions | Auto-populated: rows×columns | (system managed) |
-| M | Email Recipients | Notification emails (comma-separated) | `admin@company.com` |
+| L | Days Since Last Success | Auto-calculated: number of days | (formula) |
+| M | Last Run Timestamp | Auto-populated after execution | (system managed) |
+| N | Email Recipients | Notification emails (comma-separated) | `admin@company.com` |
 
 #### Logs Sheet (`ingest-logs`)
 Automatically tracks all operations with session correlation.

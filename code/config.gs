@@ -46,10 +46,11 @@ const RULE_COLUMNS = {
   DESTINATION: 6,
   DESTINATION_TAB: 7,
   MODE: 8,
-  LAST_RUN_TIMESTAMP: 9,       // Timestamp of last run (success or fail)
+  LAST_SUCCESS_DIMENSIONS: 9, // Data dimensions of last successful ingest
   LAST_RUN_RESULT: 10,        // Result status (SUCCESS/FAIL)
-  LAST_SUCCESS_DIMENSIONS: 11, // Data dimensions of last successful ingest
-  EMAIL_RECIPIENTS: 12        // Email recipients (last column)
+  DAYS_SINCE_LAST_SUCCESS: 11, // Days since last successful ingest (formula)
+  LAST_RUN_TIMESTAMP: 12,     // Timestamp of last run (success or fail)
+  EMAIL_RECIPIENTS: 13        // Email recipients (last column)
 };
 
 // Valid values for rule fields

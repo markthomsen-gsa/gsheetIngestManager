@@ -445,10 +445,11 @@ function updateRuleExecutionStatus(rule, result, sessionId) {
       return;
     }
     
-    // Get column indices for new columns
+    // Get column indices for columns (1-based)
     const timestampCol = columnMap.lastRunTimestamp !== -1 ? columnMap.lastRunTimestamp + 1 : RULE_COLUMNS.LAST_RUN_TIMESTAMP + 1;
     const resultCol = columnMap.lastRunResult !== -1 ? columnMap.lastRunResult + 1 : RULE_COLUMNS.LAST_RUN_RESULT + 1;
     const dimensionsCol = columnMap.lastSuccessDimensions !== -1 ? columnMap.lastSuccessDimensions + 1 : RULE_COLUMNS.LAST_SUCCESS_DIMENSIONS + 1;
+    const daysCol = columnMap.daysSinceLastSuccess !== -1 ? columnMap.daysSinceLastSuccess + 1 : RULE_COLUMNS.DAYS_SINCE_LAST_SUCCESS + 1;
     
     const now = new Date();
     const isSuccess = result.success === true;
@@ -460,8 +461,12 @@ function updateRuleExecutionStatus(rule, result, sessionId) {
     
     // Update timestamp column
     const timestampCell = rulesSheet.getRange(ruleRowIndex, timestampCol);
-    timestampCell.setValue(formatLastRunTimestamp(now));
-    timestampCell.setNumberFormat('dddd, mmmm d, yyyy'); // Format: Monday, March 3, 2025
+    timestampCell.setValue(formatLastRunTimestamp(now)); // Returns Date object
+    // Format: "ddd, mmm d, yyyy h:mm AM/PM" (e.g., "Mon, Nov 3, 2025 2:30 PM")
+    // Note: Google Sheets number formats don't support ordinal suffixes (1st, 2nd, 3rd) 
+    // or timezone abbreviations directly. For exact format with ordinals and timezone,
+    // we'd need to store as string, but that breaks the days formula.
+    timestampCell.setNumberFormat('ddd, mmm d, yyyy h:mm AM/PM');
     timestampCell.setBackground(isSuccess ? SUCCESS_COLOR : FAIL_COLOR);
     
     // Update result column
@@ -474,11 +479,35 @@ function updateRuleExecutionStatus(rule, result, sessionId) {
       const dimensionsCell = rulesSheet.getRange(ruleRowIndex, dimensionsCol);
       const dimensionsText = `${result.rowsProcessed}x${result.columnsProcessed}`;
       dimensionsCell.setValue(dimensionsText);
+      // Apply conditional coloring based on dimensions
+      const dimensionsColor = getDimensionsColor(result.rowsProcessed, result.columnsProcessed);
+      dimensionsCell.setBackground(dimensionsColor);
     } else if (isSuccess && result.rowsProcessed !== undefined) {
       // If columnsProcessed not provided, calculate from data if available
       // This is a fallback - ideally all ingest functions should return columnsProcessed
       const dimensionsCell = rulesSheet.getRange(ruleRowIndex, dimensionsCol);
       dimensionsCell.setValue(`${result.rowsProcessed}x?`);
+      // Apply conditional coloring (treat unknown columns as potentially header-only)
+      const dimensionsColor = getDimensionsColor(result.rowsProcessed, undefined);
+      dimensionsCell.setBackground(dimensionsColor);
+    }
+    
+    // Apply formula to "Days Since Last Success" column for all rule rows
+    // Formula: =IF(K{row}="SUCCESS", INT(TODAY()-INT(M{row})), "")
+    // Where K is result column and M is timestamp column
+    // Using INT() to compare only date parts (no time component)
+    if (daysCol > 0) {
+      const resultColLetter = columnIndexToLetter(resultCol);
+      const timestampColLetter = columnIndexToLetter(timestampCol);
+      
+      // Apply formula to all rule rows (starting from row 2)
+      for (let row = 2; row <= data.length; row++) {
+        const daysCell = rulesSheet.getRange(row, daysCol);
+        const formula = `=IF(${resultColLetter}${row}="SUCCESS", INT(TODAY()-INT(${timestampColLetter}${row})), "")`;
+        daysCell.setFormula(formula);
+        // Format as integer (no decimals)
+        daysCell.setNumberFormat('0');
+      }
     }
     
   } catch (error) {

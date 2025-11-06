@@ -155,9 +155,10 @@ function detectColumnPositions(headers) {
     destination: ['Destination (URL, ID, or empty for current)', 'Destination (URL or ID)', 'Destination', 'destination'],
     destinationTab: ['Destination Tab', 'destination tab', 'tab'],
     mode: ['Mode', 'mode'],
-    lastRunTimestamp: ['Last Run Timestamp', 'last run timestamp', 'last run', 'timestamp'],
-    lastRunResult: ['Last Run Result', 'last run result', 'result'],
     lastSuccessDimensions: ['Last Success Dimensions', 'last success dimensions', 'dimensions', 'last dimensions'],
+    lastRunResult: ['Last Run Result', 'last run result', 'result'],
+    daysSinceLastSuccess: ['Days Since Last Success', 'days since last success', 'days since success', 'days'],
+    lastRunTimestamp: ['Last Run Timestamp', 'last run timestamp', 'last run', 'timestamp'],
     emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails']
   };
 
@@ -421,9 +422,10 @@ function createRulesSheet() {
       'Destination (URL, ID, or empty for current)',
       'Destination Tab',
       'Mode',
-      'Last Run Timestamp',
-      'Last Run Result',
       'Last Success Dimensions',
+      'Last Run Result',
+      'Days Since Last Success',
+      'Last Run Timestamp',
       'Email Recipients'
     ];
 
@@ -446,9 +448,10 @@ function createRulesSheet() {
       'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit',
       'Data Import',
       'clearAndReuse',
-      '',  // Last Run Timestamp
-      '',  // Last Run Result
       '',  // Last Success Dimensions
+      '',  // Last Run Result
+      '',  // Days Since Last Success (formula will be applied)
+      '',  // Last Run Timestamp
       'mark.thomsen@gsa.gov'
     ];
 
@@ -465,9 +468,10 @@ function createRulesSheet() {
       '',  // Empty = current spreadsheet
       'Monthly Import',
       'clearAndReuse',
-      '',  // Last Run Timestamp
-      '',  // Last Run Result
       '',  // Last Success Dimensions
+      '',  // Last Run Result
+      '',  // Days Since Last Success (formula will be applied)
+      '',  // Last Run Timestamp
       ''
     ];
 
@@ -551,11 +555,11 @@ function addRuleValidation(sheet) {
     .build();
   activeRange.setDataValidation(activeValidation);
 
-  // Set number format for Last Run Timestamp column (dddd, mmmm d, yyyy)
+  // Set number format for Days Since Last Success column (integer, no decimals)
   if (lastRow > 1) {
-    const timestampCol = RULE_COLUMNS.LAST_RUN_TIMESTAMP + 1;
-    const timestampColumnRange = sheet.getRange(2, timestampCol, lastRow - 1, 1);
-    timestampColumnRange.setNumberFormat('dddd, mmmm d, yyyy');
+    const daysCol = RULE_COLUMNS.DAYS_SINCE_LAST_SUCCESS + 1;
+    const daysColumnRange = sheet.getRange(2, daysCol, lastRow - 1, 1);
+    daysColumnRange.setNumberFormat('0');
   }
 
   // Add note to Source Tab column header
@@ -636,14 +640,96 @@ function formatTimestamp(date) {
 
 /**
  * Format last run timestamp for rules sheet
- * Formats date as "Monday, March 3, 2025"
+ * Returns Date object for formula compatibility
+ * Display format is set via number format in the cell: 'ddd, mmm d, yyyy h:mm AM/PM'
  * @param {Date} date - Date to format
- * @returns {Date} Date object formatted for Google Sheets display
+ * @returns {Date} Date object (formatted via number format)
  */
 function formatLastRunTimestamp(date) {
-  // Return the date object - Google Sheets will format it
-  // We'll set the number format on the column to display as "Monday, March 3, 2025"
+  // Return the date object - Google Sheets will format it via number format
+  // This allows formulas to work with the date value
+  // Format: 'ddd, mmm d, yyyy h:mm AM/PM' (e.g., "Mon, Nov 3, 2025 2:30 PM")
   return date;
+}
+
+/**
+ * Get ordinal suffix for a number (1st, 2nd, 3rd, 4th, etc.)
+ * @param {number} n - Number to get ordinal for
+ * @returns {string} Ordinal suffix
+ */
+function getOrdinalSuffix(n) {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return 'st';
+  if (j === 2 && k !== 12) return 'nd';
+  if (j === 3 && k !== 13) return 'rd';
+  return 'th';
+}
+
+/**
+ * Get timezone abbreviation for a date
+ * @param {Date} date - Date to get timezone for
+ * @param {string} timezone - Timezone string (e.g., "America/New_York")
+ * @returns {string} Timezone abbreviation (e.g., "EST", "EDT", "PST")
+ */
+function getTimezoneAbbreviation(date, timezone) {
+  try {
+    // Format date with timezone to get abbreviation
+    const formatted = Utilities.formatDate(date, timezone, 'z');
+    // Extract abbreviation (e.g., "EST", "EDT", "PST")
+    return formatted;
+  } catch (e) {
+    // Fallback to timezone string if abbreviation can't be determined
+    return timezone.split('/').pop().substring(0, 3).toUpperCase();
+  }
+}
+
+/**
+ * Convert column index (1-based) to column letter (A, B, C, ..., Z, AA, AB, ...)
+ * Converts numeric column index to Google Sheets column letter notation
+ * @param {number} columnIndex - 1-based column index
+ * @returns {string} Column letter(s) (e.g., "A", "B", "Z", "AA", "AB")
+ */
+function columnIndexToLetter(columnIndex) {
+  let result = '';
+  while (columnIndex > 0) {
+    columnIndex--;
+    result = String.fromCharCode(65 + (columnIndex % 26)) + result;
+    columnIndex = Math.floor(columnIndex / 26);
+  }
+  return result;
+}
+
+/**
+ * Get color for dimensions cell based on row and column counts
+ * Returns red for 0x0 and header-only (1x{N}, {N}x1, etc.), green for actual data
+ * @param {number} rows - Number of rows processed
+ * @param {number|undefined} columns - Number of columns processed (undefined if unknown)
+ * @returns {string} Hex color code
+ */
+function getDimensionsColor(rows, columns) {
+  // Color constants
+  const EMPTY_OR_HEADER_COLOR = '#FFC7CE'; // Red for 0x0 and header row only
+  const DATA_COLOR = '#C6EFCE'; // Green for actual data
+  
+  // If columns is undefined, we can't determine if it's header-only or data
+  // Default to red (header-only) if rows is 1, otherwise green
+  if (columns === undefined) {
+    return rows === 1 ? EMPTY_OR_HEADER_COLOR : DATA_COLOR;
+  }
+  
+  // 0x0 = no data (red)
+  if (rows === 0 && columns === 0) {
+    return EMPTY_OR_HEADER_COLOR;
+  }
+  
+  // Header row only: 1x{N}, {N}x1, 1x1, 1x0, 0x1 (red)
+  if (rows === 1 || columns === 1) {
+    return EMPTY_OR_HEADER_COLOR;
+  }
+  
+  // Actual data (green)
+  return DATA_COLOR;
 }
 
 /**
