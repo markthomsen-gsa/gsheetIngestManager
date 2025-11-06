@@ -39,7 +39,7 @@ const SUPPORTED_CSV_EXTENSIONS = ['.csv']; // Supported file extensions
 const RULE_COLUMNS = {
   ACTIVE: 0,                  // Active column is now first
   ID: 1,                      // Rule ID moved to second
-  VALIDATION_FORMULA: 2,      // Validation formula column (moved between ID and Method)
+  VALIDATION_FORMULA: 2,      // Validation formula column (between ID and Method)
   METHOD: 3,
   SOURCE_QUERY: 4,
   ATTACHMENT_PATTERN: 5,
@@ -51,7 +51,7 @@ const RULE_COLUMNS = {
   LAST_RUN_RESULT: 11,        // Result status (SUCCESS/FAIL)
   DAYS_SINCE_LAST_SUCCESS: 12, // Days since last successful ingest (formula)
   LAST_RUN_TIMESTAMP: 13,     // Timestamp of last run (success or fail)
-  EMAIL_RECIPIENTS: 14        // Email recipients
+  EMAIL_RECIPIENTS: 14        // Email recipients (last column)
 };
 
 // Valid values for rule fields

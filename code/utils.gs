@@ -148,6 +148,7 @@ function detectColumnPositions(headers) {
   const headerPatterns = {
     active: ['Active', 'active'],  // Active is now first
     id: ['Rule ID', 'rule id', 'id'],
+    validationFormula: ['Validation Formula', 'validation formula', 'validation', 'formula'],
     method: ['Method', 'method'],
     sourceQuery: ['Source Query', 'source query', 'query'],
     attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
@@ -217,6 +218,7 @@ function parseRuleFromRow(row, columnMap) {
   return {
     id: getValueFromRow(row, columnMap, 'id'),
     active: getValueFromRow(row, columnMap, 'active'),
+    validationFormula: getValueFromRow(row, columnMap, 'validationFormula'),
     method: getValueFromRow(row, columnMap, 'method'),
     sourceQuery: getValueFromRow(row, columnMap, 'sourceQuery'),
     attachmentPattern: getValueFromRow(row, columnMap, 'attachmentPattern'),
@@ -584,72 +586,72 @@ function addRuleValidation(sheet) {
 
 /**
  * Apply color coding to validation formula column
- * Applies conditional formatting rules to validation formula column based on cell value
- * Color rules: TRUE=green, FALSE=red, blank=no color, anything else=yellow
+ * Applies conditional formatting rules to validation formula column based on prefix patterns
+ * Color rules: PASS prefix=green, FAIL prefix=red, WARN prefix=yellow, no pattern=preserve color
+ * Patterns are case-insensitive and support flexible spacing (PASS -, PASS-, pass -, etc.)
  * @param {Sheet} sheet - Rules sheet to apply color coding to
  */
 function applyValidationColorCoding(sheet) {
   // Get validation formula column index
   const validationCol = RULE_COLUMNS.VALIDATION_FORMULA + 1; // Convert to 1-based
   
-  // Get data range for validation column (skip header row)
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    return; // No data rows to format
-  }
-  
-  const validationRange = sheet.getRange(2, validationCol, lastRow - 1, 1);
-  
   // Get column letter for formula reference
   const colLetter = columnIndexToLetter(validationCol);
   
+  // Apply formatting to entire column (from row 2 to maxRows) so it works for all existing and future rows
+  // This ensures conditional formatting applies to all rows, not just current data rows
+  const maxRows = sheet.getMaxRows();
+  const validationRange = sheet.getRange(2, validationCol, maxRows - 1, 1); // Row 2 to maxRows (skip header)
+  
   // Color constants
-  const TRUE_COLOR = '#C6EFCE';  // Green
-  const FALSE_COLOR = '#FFC7CE'; // Red
-  const OTHER_COLOR = '#FFEB9C'; // Yellow
+  const PASS_COLOR = '#C6EFCE';  // Green
+  const FAIL_COLOR = '#FFC7CE';  // Red
+  const WARN_COLOR = '#FFEB9C';  // Yellow
   
   // Get all existing conditional format rules from the sheet
   let allRules = sheet.getConditionalFormatRules();
   
-  // Filter out any existing rules that apply to our validation range
-  // We'll replace them with our new rules
-  const validationRangeA1 = validationRange.getA1Notation();
+  // Filter out any existing rules that apply to the validation column
+  // Check if any range in the rule overlaps with our validation column
   allRules = allRules.filter(rule => {
-    // Check if this rule applies to our validation range
     const ruleRanges = rule.getRanges();
-    return !ruleRanges.some(range => range.getA1Notation() === validationRangeA1);
+    return !ruleRanges.some(range => {
+      // Check if this range is in the same column as our validation column
+      const rangeCol = range.getColumn();
+      return rangeCol === validationCol;
+    });
   });
   
-  // Create conditional formatting rules
-  // In Google Sheets conditional formatting, we need to use relative references
-  // Using INDIRECT with ROW() to reference the current cell being evaluated
+  // Create conditional formatting rules using REGEXMATCH for pattern detection
+  // Patterns: PASS-, FAIL-, WARN- (case-insensitive, flexible spacing around dash)
   const newRules = [];
   
-  // Rule 1: TRUE = Green
-  const trueRule = SpreadsheetApp.newConditionalFormatRule()
+  // Rule 1: PASS prefix = Green
+  // Matches: "PASS -", "PASS-", "pass -", "pass-", etc. (case-insensitive, flexible spacing)
+  const passRule = SpreadsheetApp.newConditionalFormatRule()
     .setRanges([validationRange])
-    .whenFormulaSatisfied(`=INDIRECT("${colLetter}"&ROW())=TRUE`)
-    .setBackground(TRUE_COLOR)
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^PASS\\s*-")`)
+    .setBackground(PASS_COLOR)
     .build();
-  newRules.push(trueRule);
+  newRules.push(passRule);
   
-  // Rule 2: FALSE = Red
-  // Also check for text "FALSE" in case user typed it as text
-  // IMPORTANT: Exclude blank cells - they should have no color
-  const falseRule = SpreadsheetApp.newConditionalFormatRule()
+  // Rule 2: FAIL prefix = Red
+  // Matches: "FAIL -", "FAIL-", "fail -", "fail-", etc. (case-insensitive, flexible spacing)
+  const failRule = SpreadsheetApp.newConditionalFormatRule()
     .setRanges([validationRange])
-    .whenFormulaSatisfied(`=AND(INDIRECT("${colLetter}"&ROW())<>"",OR(INDIRECT("${colLetter}"&ROW())=FALSE,INDIRECT("${colLetter}"&ROW())="FALSE"))`)
-    .setBackground(FALSE_COLOR)
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^FAIL\\s*-")`)
+    .setBackground(FAIL_COLOR)
     .build();
-  newRules.push(falseRule);
+  newRules.push(failRule);
   
-  // Rule 3: Anything else (not TRUE, not FALSE, not blank) = Yellow
-  const otherRule = SpreadsheetApp.newConditionalFormatRule()
+  // Rule 3: WARN prefix = Yellow
+  // Matches: "WARN -", "WARN-", "warn -", "warn-", etc. (case-insensitive, flexible spacing)
+  const warnRule = SpreadsheetApp.newConditionalFormatRule()
     .setRanges([validationRange])
-    .whenFormulaSatisfied(`=AND(INDIRECT("${colLetter}"&ROW())<>TRUE,INDIRECT("${colLetter}"&ROW())<>FALSE,INDIRECT("${colLetter}"&ROW())<>"FALSE",INDIRECT("${colLetter}"&ROW())<>"")`)
-    .setBackground(OTHER_COLOR)
+    .whenFormulaSatisfied(`=REGEXMATCH(UPPER(INDIRECT("${colLetter}"&ROW())), "^WARN\\s*-")`)
+    .setBackground(WARN_COLOR)
     .build();
-  newRules.push(otherRule);
+  newRules.push(warnRule);
   
   // Add our new rules to the existing rules
   allRules = allRules.concat(newRules);
