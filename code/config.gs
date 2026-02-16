@@ -44,19 +44,25 @@ const RULE_COLUMNS = {
   SOURCE_QUERY: 4,
   ATTACHMENT_PATTERN: 5,
   SOURCE_TAB: 6,              // Tab name for gSheet source
-  DESTINATION: 7,
-  DESTINATION_TAB: 8,
-  MODE: 9,
-  LAST_SUCCESS_DIMENSIONS: 10, // Data dimensions of last successful ingest
-  LAST_RUN_RESULT: 11,        // Result status (SUCCESS/FAIL)
-  DAYS_SINCE_LAST_SUCCESS: 12, // Days since last successful ingest (formula)
-  LAST_RUN_TIMESTAMP: 13,     // Timestamp of last run (success or fail)
-  EMAIL_RECIPIENTS: 14        // Email recipients (last column)
+  MAX_ROWS: 7,                // Max rows to ingest (blank = no limit)
+  COLUMN_FILTER: 8,           // Column filter mode: All, Include only, Exclude
+  COLUMN_NAMES: 9,            // Comma-separated column names for filter
+  ON_MISSING_COLUMN: 10,      // Behavior when named column missing: Halt, Warn
+  DESTINATION: 11,
+  DESTINATION_TAB: 12,
+  MODE: 13,
+  LAST_SUCCESS_DIMENSIONS: 14, // Data dimensions of last successful ingest
+  LAST_RUN_RESULT: 15,        // Result status (SUCCESS/FAIL)
+  DAYS_SINCE_LAST_SUCCESS: 16, // Days since last successful ingest (formula)
+  LAST_RUN_TIMESTAMP: 17,     // Timestamp of last run (success or fail)
+  EMAIL_RECIPIENTS: 18        // Email recipients (last column)
 };
 
 // Valid values for rule fields
 const VALID_METHODS = ['email', 'gSheet', 'push'];
 const VALID_MODES = ['clearAndReuse', 'append', 'recreate'];
+const VALID_COLUMN_FILTERS = ['All', 'Include only', 'Exclude'];
+const VALID_ON_MISSING = ['Halt', 'Warn'];
 
 // Logging Configuration
 const LOG_COLUMNS = {

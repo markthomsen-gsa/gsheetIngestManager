@@ -147,14 +147,18 @@ function processSheetRule(rule, sessionId) {
       };
     }
 
+    // Apply ingest limits (column filtering and max rows)
+    const limited = applyIngestLimits(sourceData, rule, sessionId, rule.id);
+    const filteredData = limited.data;
+
     // Get destination sheet
     const destSheet = getDestinationSheet(rule, sessionId);
 
     // Apply data to destination
-    const rowsWritten = applyDataToSheet(sourceData, destSheet, rule.mode);
-    
-    // Calculate column count from source data
-    const columnsProcessed = sourceData.length > 0 ? sourceData[0].length : 0;
+    const rowsWritten = applyDataToSheet(filteredData, destSheet, rule.mode);
+
+    // Calculate column count from filtered data
+    const columnsProcessed = filteredData.length > 0 ? filteredData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `Sheet import: ${rowsWritten} rows transferred from tab: ${sourceSheet.getName()}`);

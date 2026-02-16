@@ -29,14 +29,18 @@ function processPushRule(rule, sessionId) {
       return { rowsProcessed: 0 };
     }
 
+    // Apply ingest limits (column filtering and max rows)
+    const limited = applyIngestLimits(currentData, rule, sessionId, rule.id);
+    const filteredData = limited.data;
+
     // Get destination sheet
     const destSheet = getDestinationSheet(rule, sessionId);
 
     // Push data to destination
-    const rowsWritten = applyDataToSheet(currentData, destSheet, rule.mode);
-    
-    // Calculate column count from current sheet data
-    const columnsProcessed = currentData.length > 0 ? currentData[0].length : 0;
+    const rowsWritten = applyDataToSheet(filteredData, destSheet, rule.mode);
+
+    // Calculate column count from filtered data
+    const columnsProcessed = filteredData.length > 0 ? filteredData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `Data push: ${rowsWritten} rows transferred`);

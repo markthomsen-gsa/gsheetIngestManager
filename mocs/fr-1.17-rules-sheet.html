@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FR-1.17 — Rules sheet mockup</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Google Sans', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #f5f5f5;
+      padding: 24px;
+      margin: 0;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 500;
+      margin: 0 0 8px 0;
+    }
+    .subtitle {
+      color: #5f6368;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .sheet {
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      max-width: 1200px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid #dadce0;
+      border-right: 1px solid #e8eaed;
+      font-size: 12px;
+      color: #3c4043;
+    }
+    th:last-child { border-right: none; }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e8eaed;
+      border-right: 1px solid #e8eaed;
+      vertical-align: middle;
+    }
+    td:last-child { border-right: none; }
+    tr:hover td { background: #f8f9fa; }
+    .col-active   { width: 42px;  }
+    .col-id      { width: 120px; }
+    .col-method  { width: 72px;  }
+    .col-source  { width: 180px; }
+    .col-tab     { width: 80px;  }
+    .col-maxrows { width: 72px;  }
+    .col-filter  { width: 96px;  }
+    .col-names   { width: 160px; }
+    .col-missing { width: 120px; }
+    .col-dest    { width: 80px;  }
+    .col-desttab { width: 88px;  }
+    .col-mode    { width: 110px;}
+    .highlight {
+      background: #e8f0fe;
+      border-left: 3px solid #1a73e8;
+    }
+    .highlight th { background: #d2e3fc; }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+    input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    select {
+      width: 100%;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 13px;
+      background: #fff;
+    }
+    .note {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fef7e0;
+      border-radius: 4px;
+      border-left: 4px solid #f9ab00;
+      font-size: 12px;
+      color: #3c4043;
+      max-width: 1200px;
+    }
+    .note strong { color: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <h1>Data rules — sheet ingest (FR-1.17)</h1>
+  <p class="subtitle">Mockup: Max Rows + Column Filter (Include only / Exclude) for gSheet rules.</p>
+
+  <div class="sheet">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-active">Active</th>
+          <th class="col-id">Rule ID</th>
+          <th class="col-method">Method</th>
+          <th class="col-source">Source Query</th>
+          <th class="col-tab">Source Tab</th>
+          <th class="col-maxrows">Max Rows<br><span style="font-weight:400;color:#5f6368">blank = no limit</span></th>
+          <th class="col-filter">Column Filter</th>
+          <th class="col-names">Column Names</th>
+          <th class="col-missing">On missing column</th>
+          <th class="col-dest">Destination</th>
+          <th class="col-desttab">Dest. Tab</th>
+          <th class="col-mode">Mode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="highlight">
+          <td class="col-active"><input type="checkbox" checked></td>
+          <td>Sheet-Import-1</td>
+          <td>gSheet</td>
+          <td><input type="text" value="https://docs.google.com/spreadsheets/d/..." placeholder="URL or ID"></td>
+          <td><input type="text" value="Raw Data"></td>
+          <td><input type="number" value="20" min="1" placeholder="blank = no limit"></td>
+          <td><select><option>All</option><option selected>Include only</option><option>Exclude</option></select></td>
+          <td><input type="text" value="Name, Email, Date" placeholder="Comma-separated"></td>
+          <td><select><option>Halt</option><option selected>Warn</option></select></td>
+          <td>current</td>
+          <td>Imported</td>
+          <td>clearAndReuse</td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" checked></td>
+          <td>Sheet-Full</td>
+          <td>gSheet</td>
+          <td><input type="text" value="1ABC...xyz" placeholder="URL or ID"></td>
+          <td><input type="text" placeholder="(first sheet)"></td>
+          <td><input type="number" min="1" placeholder="blank = no limit"></td>
+          <td><select><option selected>All</option><option>Include only</option><option>Exclude</option></select></td>
+          <td><input type="text" placeholder="—"></td>
+          <td><select><option>Halt</option><option selected>Warn</option></select></td>
+          <td>current</td>
+          <td>Full Copy</td>
+          <td>clearAndReuse</td>
+        </tr>
+        <tr>
+          <td><input type="checkbox"></td>
+          <td>Sheet-Exclude-Cols</td>
+          <td>gSheet</td>
+          <td><input type="text" placeholder="URL or ID"></td>
+          <td>Data</td>
+          <td><input type="number" value="100" min="1" placeholder="blank = no limit"></td>
+          <td><select><option>All</option><option>Include only</option><option selected>Exclude</option></select></td>
+          <td><input type="text" value="Notes, Internal_ID"></td>
+          <td><select><option selected>Halt</option><option>Warn</option></select></td>
+          <td>current</td>
+          <td>Staged</td>
+          <td>clearAndReuse</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>Sheet (gSheet) rules:</strong> <strong>Max Rows</strong> — any positive number; blank = no limit. <strong>Column Filter</strong> + <strong>Column Names</strong> — include only or exclude columns by header name. <strong>On missing column</strong> — Halt (fail rule) or Warn (log and continue).
+  </div>
+</body>
+</html>

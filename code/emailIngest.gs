@@ -166,14 +166,18 @@ function processCsvAttachment(attachment, rule, sessionId) {
     // Validate CSV size constraints
     validateCSVSize(csvData);
 
+    // Apply ingest limits (column filtering and max rows)
+    const limited = applyIngestLimits(csvData, rule, sessionId, rule.id);
+    const filteredData = limited.data;
+
     // Get destination sheet
     const destSheet = getDestinationSheet(rule, sessionId);
 
     // Apply processing mode
-    const rowsWritten = applyCsvToSheet(csvData, destSheet, rule.mode);
-    
-    // Calculate column count from CSV data
-    const columnsProcessed = csvData.length > 0 ? csvData[0].length : 0;
+    const rowsWritten = applyCsvToSheet(filteredData, destSheet, rule.mode);
+
+    // Calculate column count from filtered data
+    const columnsProcessed = filteredData.length > 0 ? filteredData[0].length : 0;
 
     logEntry(sessionId, rule.id, 'SUCCESS',
       `${fileName}: ${rowsWritten} rows imported`);

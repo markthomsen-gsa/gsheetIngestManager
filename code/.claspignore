@@ -1,0 +1,8 @@
+# Clasp ignore file
+# Files and directories to exclude when pushing to Google Apps Script
+
+# Ignore clasp_mgr directory and all contents
+.clasp_mgr/
+.clasp_mgr/**
+**/.clasp_mgr/**
+.clasp_mgr

@@ -153,6 +153,10 @@ function detectColumnPositions(headers) {
     sourceQuery: ['Source Query', 'source query', 'query'],
     attachmentPattern: ['Attachment Pattern', 'attachment pattern', 'pattern'],
     sourceTab: ['Source Tab', 'source tab', 'Source Tab Name', 'source'],
+    maxRows: ['Max Rows', 'max rows', 'max_rows', 'row limit'],
+    columnFilter: ['Column Filter', 'column filter', 'col filter'],
+    columnNames: ['Column Names', 'column names', 'col names', 'filter columns'],
+    onMissingColumn: ['On Missing Column', 'on missing column', 'missing column', 'on missing'],
     destination: ['Destination (URL, ID, or empty for current)', 'Destination (URL or ID)', 'Destination', 'destination'],
     destinationTab: ['Destination Tab', 'destination tab', 'tab'],
     mode: ['Mode', 'mode'],
@@ -160,8 +164,7 @@ function detectColumnPositions(headers) {
     lastRunResult: ['Last Run Result', 'last run result', 'result'],
     daysSinceLastSuccess: ['Days Since Last Success', 'days since last success', 'days since success', 'days'],
     lastRunTimestamp: ['Last Run Timestamp', 'last run timestamp', 'last run', 'timestamp'],
-    emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails'],
-    validationFormula: ['Validation Formula', 'validation formula', 'validation', 'formula']
+    emailRecipients: ['Email Recipients', 'email recipients', 'recipients', 'emails']
   };
 
   // Find each field's position
@@ -223,14 +226,17 @@ function parseRuleFromRow(row, columnMap) {
     sourceQuery: getValueFromRow(row, columnMap, 'sourceQuery'),
     attachmentPattern: getValueFromRow(row, columnMap, 'attachmentPattern'),
     sourceTab: getValueFromRow(row, columnMap, 'sourceTab'),
+    maxRows: getValueFromRow(row, columnMap, 'maxRows'),
+    columnFilter: getValueFromRow(row, columnMap, 'columnFilter'),
+    columnNames: getValueFromRow(row, columnMap, 'columnNames'),
+    onMissingColumn: getValueFromRow(row, columnMap, 'onMissingColumn'),
     destination: getValueFromRow(row, columnMap, 'destination'),
     destinationTab: getValueFromRow(row, columnMap, 'destinationTab'),
     mode: getValueFromRow(row, columnMap, 'mode'),
     lastRunTimestamp: getValueFromRow(row, columnMap, 'lastRunTimestamp'),
     lastRunResult: getValueFromRow(row, columnMap, 'lastRunResult'),
     lastSuccessDimensions: getValueFromRow(row, columnMap, 'lastSuccessDimensions'),
-    emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients'),
-    validationFormula: getValueFromRow(row, columnMap, 'validationFormula')
+    emailRecipients: getValueFromRow(row, columnMap, 'emailRecipients')
   };
 }
 
@@ -294,6 +300,36 @@ function validateRule(rule) {
       parseDestination(rule.destination);
     } catch (error) {
       errors.push(`Destination error: ${error.message}`);
+    }
+  }
+
+  // Max Rows validation (blank or positive integer)
+  if (rule.maxRows !== undefined && rule.maxRows !== '' && rule.maxRows !== null) {
+    const maxRowsVal = Number(rule.maxRows);
+    if (!Number.isInteger(maxRowsVal) || maxRowsVal < 1) {
+      errors.push('Max Rows must be blank (no limit) or a positive integer');
+    }
+  }
+
+  // Column Filter validation
+  if (rule.columnFilter && rule.columnFilter.toString().trim()) {
+    const filterVal = rule.columnFilter.toString().trim();
+    if (!VALID_COLUMN_FILTERS.includes(filterVal)) {
+      errors.push(`Column Filter must be one of: ${VALID_COLUMN_FILTERS.join(', ')}`);
+    }
+
+    // Column Names required when filter is Include only or Exclude
+    if ((filterVal === 'Include only' || filterVal === 'Exclude') &&
+        (!rule.columnNames || !rule.columnNames.toString().trim())) {
+      errors.push(`Column Names is required when Column Filter is "${filterVal}"`);
+    }
+  }
+
+  // On Missing Column validation
+  if (rule.onMissingColumn && rule.onMissingColumn.toString().trim()) {
+    const missingVal = rule.onMissingColumn.toString().trim();
+    if (!VALID_ON_MISSING.includes(missingVal)) {
+      errors.push(`On Missing Column must be one of: ${VALID_ON_MISSING.join(', ')}`);
     }
   }
 
@@ -424,6 +460,10 @@ function createRulesSheet() {
       'Source Query',
       'Attachment Pattern',
       'Source Tab',
+      'Max Rows',              // Max rows to ingest (blank = no limit)
+      'Column Filter',         // All, Include only, Exclude
+      'Column Names',          // Comma-separated column names for filter
+      'On Missing Column',     // Halt or Warn
       'Destination (URL, ID, or empty for current)',
       'Destination Tab',
       'Mode',
@@ -451,6 +491,10 @@ function createRulesSheet() {
       'from:reports@company.com subject:Daily',
       'sales-.*\\.csv$',
       '',  // Source Tab (not used for email)
+      '',  // Max Rows (no limit)
+      '',  // Column Filter (not applicable for email)
+      '',  // Column Names
+      '',  // On Missing Column
       'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit',
       'Data Import',
       'clearAndReuse',
@@ -472,6 +516,10 @@ function createRulesSheet() {
       'https://docs.google.com/spreadsheets/d/SOURCE_SHEET_ID_HERE/edit#gid=0',
       '',  // Not used for gSheet
       'Sales Data',  // Source tab name
+      '',  // Max Rows (no limit)
+      'All',  // Column Filter
+      '',  // Column Names (not needed for All)
+      'Warn',  // On Missing Column
       '',  // Empty = current spreadsheet
       'Monthly Import',
       'clearAndReuse',
@@ -565,6 +613,20 @@ function addRuleValidation(sheet) {
     .build();
   activeRange.setDataValidation(activeValidation);
 
+  // Column Filter dropdown validation
+  const columnFilterRange = sheet.getRange(2, RULE_COLUMNS.COLUMN_FILTER + 1, lastRow - 1, 1);
+  const columnFilterValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(VALID_COLUMN_FILTERS)
+    .build();
+  columnFilterRange.setDataValidation(columnFilterValidation);
+
+  // On Missing Column dropdown validation
+  const onMissingRange = sheet.getRange(2, RULE_COLUMNS.ON_MISSING_COLUMN + 1, lastRow - 1, 1);
+  const onMissingValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(VALID_ON_MISSING)
+    .build();
+  onMissingRange.setDataValidation(onMissingValidation);
+
   // Set number format for Days Since Last Success column (integer, no decimals)
   if (lastRow > 1) {
     const daysCol = RULE_COLUMNS.DAYS_SINCE_LAST_SUCCESS + 1;
@@ -578,6 +640,38 @@ function addRuleValidation(sheet) {
     'Optional: Specify tab name to read from source sheet (gSheet method only).\n' +
     'Leave empty to use first tab.\n' +
     'Not used for email or push methods.'
+  );
+
+  // Add note to Max Rows column header
+  const maxRowsHeader = sheet.getRange(1, RULE_COLUMNS.MAX_ROWS + 1);
+  maxRowsHeader.setNote(
+    'Optional: Maximum number of data rows to ingest (excludes header).\n' +
+    'Leave blank for no limit.\n' +
+    'Rows beyond this limit are silently dropped.'
+  );
+
+  // Add note to Column Filter column header
+  const columnFilterHeader = sheet.getRange(1, RULE_COLUMNS.COLUMN_FILTER + 1);
+  columnFilterHeader.setNote(
+    'All: Import all columns (default).\n' +
+    'Include only: Import only the columns listed in Column Names.\n' +
+    'Exclude: Import all columns except those listed in Column Names.'
+  );
+
+  // Add note to Column Names column header
+  const columnNamesHeader = sheet.getRange(1, RULE_COLUMNS.COLUMN_NAMES + 1);
+  columnNamesHeader.setNote(
+    'Comma-separated list of column header names.\n' +
+    'Used with "Include only" or "Exclude" Column Filter.\n' +
+    'Names must match source headers exactly (case-sensitive).'
+  );
+
+  // Add note to On Missing Column column header
+  const onMissingHeader = sheet.getRange(1, RULE_COLUMNS.ON_MISSING_COLUMN + 1);
+  onMissingHeader.setNote(
+    'Behavior when a named column is not found in source data.\n' +
+    'Halt: Stop processing this rule with an error.\n' +
+    'Warn: Log a warning and continue without the missing column.'
   );
   
   // Apply color coding to validation formula column
@@ -886,4 +980,103 @@ function validateCSVSize(csvData) {
   }
 
   return true;
+}
+
+/**
+ * Apply ingest limits (max rows, column filtering) to a 2D data array
+ * First row is treated as the header row.
+ * @param {Array<Array>} data - Source data (first row = headers)
+ * @param {Object} rule - Rule configuration with limit fields
+ * @param {string|number} [rule.maxRows] - Max data rows (blank/0 = no limit)
+ * @param {string} [rule.columnFilter] - 'All', 'Include only', or 'Exclude'
+ * @param {string} [rule.columnNames] - Comma-separated column names
+ * @param {string} [rule.onMissingColumn] - 'Halt' or 'Warn'
+ * @param {string} sessionId - Session ID for logging
+ * @param {string} ruleId - Rule ID for logging
+ * @returns {Object} Result with filtered data and log messages
+ * @returns {Array<Array>} returns.data - Filtered data array (header + data rows)
+ * @returns {Array<string>} returns.warnings - Warning messages generated
+ * @throws {Error} If onMissingColumn is 'Halt' and a named column is missing
+ */
+function applyIngestLimits(data, rule, sessionId, ruleId) {
+  if (!data || data.length === 0) {
+    return { data: data, warnings: [] };
+  }
+
+  const warnings = [];
+  let result = data;
+
+  // --- Column filtering ---
+  const filterMode = (rule.columnFilter || '').toString().trim();
+  if (filterMode && filterMode !== 'All') {
+    const columnNamesRaw = (rule.columnNames || '').toString().trim();
+    if (!columnNamesRaw) {
+      throw new Error(`Column Names is required when Column Filter is "${filterMode}"`);
+    }
+
+    const requestedNames = columnNamesRaw.split(',').map(n => n.trim()).filter(n => n);
+    const sourceHeaders = result[0].map(h => h.toString());
+
+    // Build index map: for each requested name, find its position in source headers
+    const matchedIndices = [];
+    const missingNames = [];
+
+    for (const name of requestedNames) {
+      const idx = sourceHeaders.indexOf(name);
+      if (idx === -1) {
+        missingNames.push(name);
+      } else {
+        matchedIndices.push(idx);
+      }
+    }
+
+    // Handle missing columns
+    const onMissing = (rule.onMissingColumn || 'Warn').toString().trim();
+    if (missingNames.length > 0) {
+      const msg = `Column(s) not found in source: ${missingNames.join(', ')}`;
+      if (onMissing === 'Halt') {
+        throw new Error(msg);
+      }
+      // Warn mode
+      warnings.push(msg);
+      logEntry(sessionId, ruleId, 'WARNING', msg);
+    }
+
+    if (filterMode === 'Include only') {
+      // Keep only matched columns (in the order they were requested)
+      if (matchedIndices.length === 0) {
+        throw new Error('No columns remain after applying "Include only" filter — all named columns are missing');
+      }
+      result = result.map(row => matchedIndices.map(i => i < row.length ? row[i] : ''));
+      logEntry(sessionId, ruleId, 'INFO',
+        `Column filter "Include only": kept ${matchedIndices.length} of ${sourceHeaders.length} columns`);
+    } else if (filterMode === 'Exclude') {
+      // Remove matched columns
+      const excludeSet = new Set(matchedIndices);
+      const keepIndices = sourceHeaders.map((_, i) => i).filter(i => !excludeSet.has(i));
+      if (keepIndices.length === 0) {
+        throw new Error('No columns remain after applying "Exclude" filter — all columns were excluded');
+      }
+      result = result.map(row => keepIndices.map(i => i < row.length ? row[i] : ''));
+      logEntry(sessionId, ruleId, 'INFO',
+        `Column filter "Exclude": removed ${matchedIndices.length}, kept ${keepIndices.length} of ${sourceHeaders.length} columns`);
+    }
+  }
+
+  // --- Max rows limiting ---
+  const maxRowsVal = rule.maxRows !== undefined && rule.maxRows !== '' && rule.maxRows !== null
+    ? Number(rule.maxRows)
+    : 0;
+
+  if (maxRowsVal > 0 && result.length > 1) {
+    const dataRowCount = result.length - 1; // exclude header
+    if (dataRowCount > maxRowsVal) {
+      result = [result[0], ...result.slice(1, maxRowsVal + 1)];
+      const droppedCount = dataRowCount - maxRowsVal;
+      logEntry(sessionId, ruleId, 'INFO',
+        `Max Rows limit: kept ${maxRowsVal} of ${dataRowCount} data rows (${droppedCount} dropped)`);
+    }
+  }
+
+  return { data: result, warnings: warnings };
 }
